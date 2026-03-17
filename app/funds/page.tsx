@@ -15,6 +15,16 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,6 +39,7 @@ import {
   CreditCard,
   Building2,
   Bitcoin,
+  QrCode,
   Clock,
   CheckCircle2,
   XCircle,
@@ -87,6 +98,7 @@ const initialTransactions = [
 ]
 
 const FUNDS_TRANSACTIONS_STORAGE_KEY = "forexpro-funds-transactions"
+const FUNDS_RECIPIENTS_STORAGE_KEY = "forexpro-funds-recipients"
 
 const statusConfig = {
   completed: {
@@ -110,18 +122,110 @@ const paymentMethods = [
   { id: "card", name: "Credit/Debit Card", icon: CreditCard, fee: "2.5%", time: "Instant" },
   { id: "bank", name: "Bank Transfer", icon: Building2, fee: "Free", time: "1-3 days" },
   { id: "crypto", name: "Cryptocurrency", icon: Bitcoin, fee: "1%", time: "10-30 min" },
+  { id: "upi", name: "UPI", icon: Building2, fee: "Free", time: "Instant" },
+  { id: "qr", name: "QR Payment", icon: QrCode, fee: "Free", time: "Instant" },
 ]
 
+type SavedRecipient =
+  | {
+      id: string
+      label: string
+      method: "bank"
+      isDefault: boolean
+      accountHolderName: string
+      bankName: string
+      bankAccountNumber: string
+      bankIfsc: string
+      bankBranch: string
+    }
+  | {
+      id: string
+      label: string
+      method: "upi"
+      isDefault: boolean
+      upiId: string
+    }
+
+const initialRecipients: SavedRecipient[] = [
+  {
+    id: "rcp-bank-1",
+    label: "Primary Bank (Salary)",
+    method: "bank",
+    isDefault: true,
+    accountHolderName: "Alex Carter",
+    bankName: "HDFC Bank",
+    bankAccountNumber: "241988001204",
+    bankIfsc: "HDFC0001234",
+    bankBranch: "Bengaluru Main",
+  },
+  {
+    id: "rcp-bank-2",
+    label: "Secondary Bank",
+    method: "bank",
+    isDefault: false,
+    accountHolderName: "Alex Carter",
+    bankName: "ICICI Bank",
+    bankAccountNumber: "020591009341",
+    bankIfsc: "ICIC0000777",
+    bankBranch: "Mumbai BKC",
+  },
+  {
+    id: "rcp-upi-1",
+    label: "Personal UPI",
+    method: "upi",
+    isDefault: false,
+    upiId: "alex@upi",
+  },
+]
+
+function maskAccountNumber(account: string) {
+  const compact = account.replace(/\s+/g, "")
+  if (compact.length <= 4) return compact
+  return `****${compact.slice(-4)}`
+}
+
+function formatAccountNumberInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 20)
+  return digits.replace(/(.{4})/g, "$1 ").trim()
+}
+
+function normalizeIfscInput(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11)
+}
+
+function normalizeUpiInput(value: string) {
+  return value.toLowerCase().replace(/\s+/g, "").slice(0, 60)
+}
+
 export default function FundsPage() {
+  const accountOptions = [
+    { value: "wallet-usd", label: "Wallet USD", balance: "$15,800" },
+    { value: "mt5-12345", label: "MT5-12345 - Main Trading", balance: "$45,250" },
+    { value: "mt5-12346", label: "MT5-12346 - Scalping", balance: "$28,750" },
+  ]
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [transferAmount, setTransferAmount] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [activeTab, setActiveTab] = useState("deposit")
+  const [depositAccount, setDepositAccount] = useState("mt5-12345")
+  const [withdrawAccount, setWithdrawAccount] = useState("mt5-12345")
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("bank")
+  const [withdrawMethod, setWithdrawMethod] = useState("bank")
+  const [upiId, setUpiId] = useState("")
+  const [withdrawUpiId, setWithdrawUpiId] = useState("")
+  const [accountHolderName, setAccountHolderName] = useState("")
+  const [bankName, setBankName] = useState("")
+  const [bankAccountNumber, setBankAccountNumber] = useState("")
+  const [bankIfsc, setBankIfsc] = useState("")
+  const [bankBranch, setBankBranch] = useState("")
   const [transferFromAccount, setTransferFromAccount] = useState("mt5-12345")
   const [transferToAccount, setTransferToAccount] = useState("mt5-12346")
   const [transactions, setTransactions] = useState(initialTransactions)
+  const [savedRecipients, setSavedRecipients] = useState<SavedRecipient[]>(initialRecipients)
+  const [selectedRecipientId, setSelectedRecipientId] = useState("")
+  const [editingRecipientId, setEditingRecipientId] = useState<string | null>(null)
+  const [pendingDeleteRecipientId, setPendingDeleteRecipientId] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem(FUNDS_TRANSACTIONS_STORAGE_KEY)
@@ -137,26 +241,73 @@ export default function FundsPage() {
   }, [])
 
   useEffect(() => {
+    const stored = localStorage.getItem(FUNDS_RECIPIENTS_STORAGE_KEY)
+    if (!stored) return
+    try {
+      const parsed = JSON.parse(stored) as SavedRecipient[]
+      if (Array.isArray(parsed) && parsed.length) {
+        setSavedRecipients(parsed)
+      }
+    } catch {
+      // ignore invalid local data
+    }
+  }, [])
+
+  useEffect(() => {
     localStorage.setItem(FUNDS_TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactions))
   }, [transactions])
+
+  useEffect(() => {
+    localStorage.setItem(FUNDS_RECIPIENTS_STORAGE_KEY, JSON.stringify(savedRecipients))
+  }, [savedRecipients])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tabFromQuery = params.get("tab")
     const fromQuery = params.get("from")
+    const toQuery = params.get("to")
 
     if (tabFromQuery === "deposit" || tabFromQuery === "withdraw" || tabFromQuery === "transfer") {
       setActiveTab(tabFromQuery)
     }
-    if (fromQuery) {
+    if (fromQuery && tabFromQuery === "transfer") {
       setTransferFromAccount(fromQuery.toLowerCase())
-      setActiveTab("transfer")
+    }
+    if (toQuery === "wallet-usd") {
+      if (tabFromQuery === "transfer") setTransferToAccount("wallet-usd")
+      if (tabFromQuery === "deposit") setDepositAccount("wallet-usd")
+    }
+    if (fromQuery === "wallet-usd" && tabFromQuery === "withdraw") {
+      setWithdrawAccount("wallet-usd")
     }
   }, [])
+
+  useEffect(() => {
+    setEditingRecipientId(null)
+    const defaultRecipient = savedRecipients.find((recipient) => recipient.method === withdrawMethod && recipient.isDefault)
+    if (!defaultRecipient) {
+      setSelectedRecipientId("")
+      return
+    }
+    setSelectedRecipientId(defaultRecipient.id)
+    if (defaultRecipient.method === "bank") {
+      setAccountHolderName(defaultRecipient.accountHolderName)
+      setBankName(defaultRecipient.bankName)
+      setBankAccountNumber(formatAccountNumberInput(defaultRecipient.bankAccountNumber))
+      setBankIfsc(defaultRecipient.bankIfsc)
+      setBankBranch(defaultRecipient.bankBranch)
+    } else {
+      setWithdrawUpiId(normalizeUpiInput(defaultRecipient.upiId))
+    }
+  }, [withdrawMethod, savedRecipients])
 
   const handleDeposit = () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) {
       toast.error('Invalid Amount', { description: 'Please enter a valid deposit amount' })
+      return
+    }
+    if (selectedPaymentMethod === "upi" && !upiId) {
+      toast.error('UPI ID Required', { description: 'Please enter a valid UPI ID for deposit.' })
       return
     }
     setIsProcessing(true)
@@ -170,7 +321,7 @@ export default function FundsPage() {
           amount: `+$${Number(depositAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           status: "pending",
           date: new Date().toLocaleString(),
-          account: "MT5-12345",
+          account: depositAccount.toUpperCase(),
         },
         ...prev,
       ])
@@ -185,17 +336,29 @@ export default function FundsPage() {
       toast.error('Invalid Amount', { description: 'Please enter a valid withdrawal amount' })
       return
     }
+    if (withdrawMethod === "bank" && (!bankName || !bankAccountNumber || !bankIfsc)) {
+      toast.error('Bank Details Required', { description: 'Please provide bank name, account number, and IFSC.' })
+      return
+    }
+    if (withdrawMethod === "bank" && (!accountHolderName || !bankBranch)) {
+      toast.error('Bank Beneficiary Details Missing', { description: 'Please provide account holder name and branch.' })
+      return
+    }
+    if (withdrawMethod === "upi" && !withdrawUpiId) {
+      toast.error('UPI ID Required', { description: 'Please enter a valid UPI ID for withdrawal.' })
+      return
+    }
     setIsProcessing(true)
     setTimeout(() => {
       setTransactions((prev) => [
         {
           id: `TXN${String(prev.length + 1).padStart(3, "0")}`,
           type: "Withdrawal",
-          method: "Bank Transfer",
+          method: withdrawMethod === "bank" ? "Bank Transfer" : withdrawMethod === "upi" ? "UPI" : "Crypto",
           amount: `-$${Number(withdrawAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           status: "pending",
           date: new Date().toLocaleString(),
-          account: "MT5-12345",
+          account: withdrawAccount.toUpperCase(),
         },
         ...prev,
       ])
@@ -206,6 +369,10 @@ export default function FundsPage() {
   }
 
   const handleTransfer = () => {
+    if (transferFromAccount === transferToAccount) {
+      toast.error('Invalid Transfer', { description: 'From and To accounts cannot be the same.' })
+      return
+    }
     if (!transferAmount || parseFloat(transferAmount) <= 0) {
       toast.error('Invalid Amount', { description: 'Please enter a valid transfer amount' })
       return
@@ -238,6 +405,130 @@ export default function FundsPage() {
     else setTransferAmount(amount)
     toast.info('Amount Set', { description: `$${amount} selected` })
   }
+
+  const filteredRecipients = useMemo(
+    () => savedRecipients.filter((recipient) => recipient.method === withdrawMethod),
+    [savedRecipients, withdrawMethod]
+  )
+
+  const applyRecipient = (recipientId: string) => {
+    setSelectedRecipientId(recipientId)
+    const recipient = savedRecipients.find((item) => item.id === recipientId)
+    if (!recipient) return
+    if (recipient.method === "bank") {
+      setAccountHolderName(recipient.accountHolderName)
+      setBankName(recipient.bankName)
+      setBankAccountNumber(formatAccountNumberInput(recipient.bankAccountNumber))
+      setBankIfsc(recipient.bankIfsc)
+      setBankBranch(recipient.bankBranch)
+    } else {
+      setWithdrawUpiId(recipient.upiId)
+    }
+    toast.success("Recipient profile applied")
+  }
+
+  const setRecipientAsDefault = (recipientId: string) => {
+    setSavedRecipients((prev) => prev.map((item) => ({ ...item, isDefault: item.id === recipientId })))
+    toast.success("Default recipient updated")
+  }
+
+  const editRecipient = (recipientId: string) => {
+    const recipient = savedRecipients.find((item) => item.id === recipientId)
+    if (!recipient) return
+    setEditingRecipientId(recipient.id)
+    setWithdrawMethod(recipient.method)
+    applyRecipient(recipient.id)
+    toast.info("Editing recipient details")
+  }
+
+  const deleteRecipient = (recipientId: string) => {
+    setSavedRecipients((prev) => {
+      const target = prev.find((item) => item.id === recipientId)
+      const next = prev.filter((item) => item.id !== recipientId)
+      if (!target) return prev
+      if (target.isDefault) {
+        const fallback = next.find((item) => item.method === target.method)
+        if (fallback) {
+          return next.map((item) => ({ ...item, isDefault: item.id === fallback.id }))
+        }
+      }
+      return next
+    })
+    if (selectedRecipientId === recipientId) {
+      setSelectedRecipientId("")
+    }
+    if (editingRecipientId === recipientId) {
+      setEditingRecipientId(null)
+    }
+    toast.success("Recipient deleted")
+  }
+
+  const requestDeleteRecipient = (recipientId: string) => {
+    setPendingDeleteRecipientId(recipientId)
+  }
+
+  const confirmDeleteRecipient = () => {
+    if (!pendingDeleteRecipientId) return
+    deleteRecipient(pendingDeleteRecipientId)
+    setPendingDeleteRecipientId(null)
+  }
+
+  const saveCurrentRecipient = () => {
+    if (withdrawMethod === "bank") {
+      const rawAccountNumber = bankAccountNumber.replace(/\s+/g, "")
+      if (!accountHolderName || !bankName || !rawAccountNumber || !bankIfsc || !bankBranch) {
+        toast.error("Cannot Save Recipient", { description: "Complete all bank beneficiary fields first." })
+        return
+      }
+      const recipient: SavedRecipient = {
+        id: editingRecipientId ?? `rcp-bank-${Date.now()}`,
+        label: `${bankName} - ${rawAccountNumber.slice(-4)}`,
+        method: "bank",
+        isDefault: savedRecipients.filter((item) => item.method === "bank").length === 0,
+        accountHolderName,
+        bankName,
+        bankAccountNumber: rawAccountNumber,
+        bankIfsc: normalizeIfscInput(bankIfsc),
+        bankBranch,
+      }
+      setSavedRecipients((prev) => {
+        if (!editingRecipientId) return [recipient, ...prev]
+        return prev.map((item) => (item.id === editingRecipientId ? { ...recipient, isDefault: item.isDefault } : item))
+      })
+      setSelectedRecipientId(recipient.id)
+      setEditingRecipientId(null)
+      toast.success(editingRecipientId ? "Bank recipient updated" : "Bank recipient saved")
+      return
+    }
+    if (!withdrawUpiId) {
+      toast.error("Cannot Save Recipient", { description: "Enter a UPI ID first." })
+      return
+    }
+    const recipient: SavedRecipient = {
+      id: editingRecipientId ?? `rcp-upi-${Date.now()}`,
+      label: `UPI - ${normalizeUpiInput(withdrawUpiId)}`,
+      method: "upi",
+      isDefault: savedRecipients.filter((item) => item.method === "upi").length === 0,
+      upiId: normalizeUpiInput(withdrawUpiId),
+    }
+    setSavedRecipients((prev) => {
+      if (!editingRecipientId) return [recipient, ...prev]
+      return prev.map((item) => (item.id === editingRecipientId ? { ...recipient, isDefault: item.isDefault } : item))
+    })
+    setSelectedRecipientId(recipient.id)
+    setEditingRecipientId(null)
+    toast.success(editingRecipientId ? "UPI recipient updated" : "UPI recipient saved")
+  }
+
+  const restoreDefaultRecipients = () => {
+    setSavedRecipients(initialRecipients)
+    setSelectedRecipientId("")
+    setEditingRecipientId(null)
+    setPendingDeleteRecipientId(null)
+    toast.success("Default recipients restored")
+  }
+
+  const pendingDeleteRecipient = savedRecipients.find((recipient) => recipient.id === pendingDeleteRecipientId)
 
   return (
     <DashboardShell>
@@ -302,13 +593,14 @@ export default function FundsPage() {
                   <FieldGroup>
                     <Field>
                       <FieldLabel>Select Account</FieldLabel>
-                      <Select defaultValue="mt5-12345">
+                      <Select value={depositAccount} onValueChange={setDepositAccount}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select account" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="mt5-12345">MT5-12345 - Main Trading ($45,250)</SelectItem>
-                          <SelectItem value="mt5-12346">MT5-12346 - Scalping ($28,750)</SelectItem>
+                          {accountOptions.map((account) => (
+                            <SelectItem key={account.value} value={account.value}>{account.label} ({account.balance})</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </Field>
@@ -363,6 +655,30 @@ export default function FundsPage() {
                       </Badge>
                     </button>
                   ))}
+                  {selectedPaymentMethod === "upi" && (
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <p className="text-sm font-medium text-foreground mb-2">UPI Payment</p>
+                      <Input placeholder="Enter UPI ID (example@upi)" value={upiId} onChange={(e) => setUpiId(normalizeUpiInput(e.target.value))} />
+                    </div>
+                  )}
+                  {selectedPaymentMethod === "qr" && (
+                    <div className="rounded-lg border border-border bg-card p-3 text-center">
+                      <p className="text-sm font-medium text-foreground mb-3">Scan QR to Deposit</p>
+                      <div className="mx-auto w-fit rounded-lg bg-white p-2">
+                        <img src="/placeholder.svg" alt="Payment QR" className="h-24 w-24" />
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">After scan and payment, click Continue to Payment to create the pending transaction.</p>
+                    </div>
+                  )}
+                  <div className="rounded-lg border border-border bg-card p-3">
+                    <p className="text-sm font-medium text-foreground">Deposit Flow</p>
+                    <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
+                      <li>1. Select receiving account (wallet or trading account).</li>
+                      <li>2. Pick payment method (Card/Bank/Crypto/UPI/QR).</li>
+                      <li>3. Enter amount and submit to create a Pending transaction.</li>
+                      <li>4. Once processed, status becomes Completed and balance updates.</li>
+                    </ol>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -380,29 +696,115 @@ export default function FundsPage() {
                   <FieldGroup>
                     <Field>
                       <FieldLabel>Select Account</FieldLabel>
-                      <Select defaultValue="mt5-12345">
+                      <Select value={withdrawAccount} onValueChange={setWithdrawAccount}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select account" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="mt5-12345">MT5-12345 - Main Trading ($45,250)</SelectItem>
-                          <SelectItem value="mt5-12346">MT5-12346 - Scalping ($28,750)</SelectItem>
+                          {accountOptions.map((account) => (
+                            <SelectItem key={account.value} value={account.value}>{account.label} ({account.balance})</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </Field>
                     <Field>
                       <FieldLabel>Withdrawal Method</FieldLabel>
-                      <Select defaultValue="bank">
+                      <Select value={withdrawMethod} onValueChange={setWithdrawMethod}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select method" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="bank">Bank Transfer</SelectItem>
-                          <SelectItem value="card">Credit/Debit Card</SelectItem>
+                          <SelectItem value="upi">UPI</SelectItem>
                           <SelectItem value="crypto">Cryptocurrency</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>
+                    <Field>
+                      <FieldLabel>Saved Recipient</FieldLabel>
+                      <Select value={selectedRecipientId} onValueChange={applyRecipient}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={filteredRecipients.length ? "Choose saved recipient" : "No saved recipients for this method"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filteredRecipients.length === 0 ? (
+                            <SelectItem value="__none" disabled>No saved recipients</SelectItem>
+                          ) : (
+                            filteredRecipients.map((recipient) => (
+                              <SelectItem key={recipient.id} value={recipient.id}>
+                                {recipient.label}{recipient.isDefault ? " (Default)" : ""}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    {filteredRecipients.length > 0 && (
+                      <div className="rounded-lg border border-border bg-card p-3">
+                        <p className="text-sm font-medium text-foreground mb-2">Saved Recipients</p>
+                        <div className="space-y-2">
+                          {filteredRecipients.map((recipient) => (
+                            <div key={recipient.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2">
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{recipient.label}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {recipient.method === "bank" ? `${recipient.bankName} • ${maskAccountNumber(recipient.bankAccountNumber)}` : recipient.upiId}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button type="button" size="sm" variant="outline" onClick={() => applyRecipient(recipient.id)}>Use</Button>
+                                <Button type="button" size="sm" variant="outline" onClick={() => editRecipient(recipient.id)}>Edit</Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={recipient.isDefault ? "default" : "outline"}
+                                  onClick={() => setRecipientAsDefault(recipient.id)}
+                                >
+                                  {recipient.isDefault ? "Default" : "Set Default"}
+                                </Button>
+                                <Button type="button" size="sm" variant="outline" onClick={() => requestDeleteRecipient(recipient.id)}>Delete</Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          <Button type="button" size="sm" variant="outline" onClick={restoreDefaultRecipients}>
+                            Restore Default Recipients
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {withdrawMethod === "bank" && (
+                      <>
+                        <Field>
+                          <FieldLabel>Account Holder Name</FieldLabel>
+                          <Input placeholder="As per bank records" value={accountHolderName} onChange={(e) => setAccountHolderName(e.target.value)} />
+                        </Field>
+                        <Field>
+                          <FieldLabel>Bank Name</FieldLabel>
+                          <Input placeholder="HDFC / ICICI / SBI..." value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                        </Field>
+                        <Field>
+                          <FieldLabel>Account Number</FieldLabel>
+                          <Input placeholder="Enter account number" value={bankAccountNumber} onChange={(e) => setBankAccountNumber(formatAccountNumberInput(e.target.value))} />
+                          <p className="mt-1 text-xs text-muted-foreground">Masked preview: {maskAccountNumber(bankAccountNumber)}</p>
+                        </Field>
+                        <Field>
+                          <FieldLabel>IFSC Code</FieldLabel>
+                          <Input placeholder="ABCD0123456" value={bankIfsc} onChange={(e) => setBankIfsc(normalizeIfscInput(e.target.value))} />
+                        </Field>
+                        <Field>
+                          <FieldLabel>Branch</FieldLabel>
+                          <Input placeholder="Branch name / city" value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} />
+                        </Field>
+                      </>
+                    )}
+                    {withdrawMethod === "upi" && (
+                      <Field>
+                        <FieldLabel>UPI ID</FieldLabel>
+                        <Input placeholder="example@upi" value={withdrawUpiId} onChange={(e) => setWithdrawUpiId(normalizeUpiInput(e.target.value))} />
+                      </Field>
+                    )}
                     <Field>
                       <FieldLabel>Amount (USD)</FieldLabel>
                       <Input 
@@ -413,7 +815,10 @@ export default function FundsPage() {
                       />
                     </Field>
                   </FieldGroup>
-                  <div className="rounded-lg bg-secondary/50 p-3">
+                  <Button type="button" variant="outline" className="w-full" onClick={saveCurrentRecipient}>
+                    {editingRecipientId ? "Update Recipient Profile" : "Save Current Recipient Profile"}
+                  </Button>
+                  <div className="rounded-lg border border-border bg-card p-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Available Balance</span>
                       <span className="font-medium text-foreground">$45,250.00</span>
@@ -462,6 +867,15 @@ export default function FundsPage() {
                       </p>
                     </div>
                   </div>
+                  <div className="rounded-lg border border-border bg-card p-3">
+                    <p className="text-sm font-medium text-foreground">Withdrawal Flow</p>
+                    <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
+                      <li>1. Select source account (wallet or trading account).</li>
+                      <li>2. Choose method (Bank/UPI/Crypto) and add beneficiary details.</li>
+                      <li>3. Submit amount and request moves to Pending in history.</li>
+                      <li>4. After review/approval, status updates to Completed or Failed.</li>
+                    </ol>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -483,8 +897,9 @@ export default function FundsPage() {
                         <SelectValue placeholder="Select account" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mt5-12345">MT5-12345 - Main Trading ($45,250)</SelectItem>
-                        <SelectItem value="mt5-12346">MT5-12346 - Scalping ($28,750)</SelectItem>
+                        {accountOptions.map((account) => (
+                          <SelectItem key={account.value} value={account.value}>{account.label} ({account.balance})</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
@@ -495,8 +910,9 @@ export default function FundsPage() {
                         <SelectValue placeholder="Select account" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mt5-12345">MT5-12345 - Main Trading ($45,250)</SelectItem>
-                        <SelectItem value="mt5-12346">MT5-12346 - Scalping ($28,750)</SelectItem>
+                        {accountOptions.map((account) => (
+                          <SelectItem key={account.value} value={account.value}>{account.label} ({account.balance})</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
@@ -510,7 +926,7 @@ export default function FundsPage() {
                     />
                   </Field>
                 </FieldGroup>
-                <div className="rounded-lg bg-secondary/50 p-3">
+                <div className="rounded-lg border border-border bg-card p-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Transfer Fee</span>
                     <span className="font-medium text-chart-1">Free</span>
@@ -519,6 +935,9 @@ export default function FundsPage() {
                     <span className="text-muted-foreground">Processing</span>
                     <span className="font-medium text-foreground">Instant</span>
                   </div>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">
+                  Wallet option is available on both sides. You can transfer Wallet -&gt; Trading account or Trading account -&gt; Wallet instantly.
                 </div>
                 <Button className="w-full" onClick={handleTransfer} disabled={isProcessing}>
                   {isProcessing ? 'Processing...' : 'Transfer Funds'}
@@ -585,6 +1004,23 @@ export default function FundsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <AlertDialog open={Boolean(pendingDeleteRecipientId)} onOpenChange={(open) => !open && setPendingDeleteRecipientId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete recipient profile?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingDeleteRecipient
+                  ? `This will remove "${pendingDeleteRecipient.label}" from saved recipients. This action cannot be undone.`
+                  : "This action cannot be undone."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteRecipient}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardShell>
   )

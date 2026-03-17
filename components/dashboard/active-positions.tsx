@@ -65,7 +65,7 @@ export function ActivePositions() {
   const router = useRouter()
 
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/50 h-full">
+    <Card className="bg-card border-border h-full">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
@@ -104,7 +104,7 @@ export function ActivePositions() {
                 toast.info(position.symbol, { description: "Opening trade details..." })
                 router.push(`/trading?symbol=${encodeURIComponent(position.symbol)}`)
               }}
-              className="group relative flex items-center gap-4 p-3 rounded-xl border border-border/50 bg-card/50 hover:bg-secondary/30 transition-all duration-200 cursor-pointer"
+              className="group relative flex items-center gap-4 p-3 rounded-xl border border-border bg-card hover:bg-secondary/30 transition-all duration-200 cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               {/* Symbol & Type */}
@@ -151,11 +151,6 @@ export function ActivePositions() {
                 </span>
               </div>
 
-              {/* Hover indicator */}
-              <div className={cn(
-                "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100",
-                position.profitType === "positive" ? "bg-success" : "bg-destructive"
-              )} />
             </div>
           ))}
         </div>

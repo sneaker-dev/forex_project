@@ -6,13 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -20,13 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TrendingUp, TrendingDown, X, Filter } from "lucide-react"
+import { TrendingUp, X, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -35,255 +26,51 @@ import {
   AreaChart,
   Area,
 } from "recharts"
-
-export const dynamic = "force-dynamic"
-
-const initialOpenPositions = [
-  {
-    id: "P001",
-    symbol: "EUR/USD",
-    type: "Buy",
-    volume: "1.00",
-    openPrice: "1.0845",
-    currentPrice: "1.0892",
-    sl: "1.0800",
-    tp: "1.0950",
-    swap: "-$2.50",
-    profit: "+$470.00",
-    profitType: "positive",
-    openTime: "Mar 14, 2026 10:30",
-    account: "mt5-12345",
-  },
-  {
-    id: "P002",
-    symbol: "GBP/USD",
-    type: "Sell",
-    volume: "0.50",
-    openPrice: "1.2715",
-    currentPrice: "1.2680",
-    sl: "1.2800",
-    tp: "1.2600",
-    swap: "-$1.25",
-    profit: "+$175.00",
-    profitType: "positive",
-    openTime: "Mar 14, 2026 14:15",
-    account: "mt5-12345",
-  },
-  {
-    id: "P003",
-    symbol: "USD/JPY",
-    type: "Buy",
-    volume: "2.00",
-    openPrice: "149.25",
-    currentPrice: "148.90",
-    sl: "148.50",
-    tp: "150.00",
-    swap: "+$3.20",
-    profit: "-$235.00",
-    profitType: "negative",
-    openTime: "Mar 15, 2026 08:00",
-    account: "mt5-12346",
-  },
-  {
-    id: "P004",
-    symbol: "XAU/USD",
-    type: "Buy",
-    volume: "0.10",
-    openPrice: "2025.50",
-    currentPrice: "2048.30",
-    sl: "2000.00",
-    tp: "2100.00",
-    swap: "-$5.00",
-    profit: "+$228.00",
-    profitType: "positive",
-    openTime: "Mar 13, 2026 16:45",
-    account: "mt5-12346",
-  },
-]
-
-const initialPendingOrders = [
-  {
-    id: "O001",
-    symbol: "EUR/USD",
-    type: "Buy Limit",
-    volume: "0.50",
-    price: "1.0750",
-    sl: "1.0700",
-    tp: "1.0900",
-    expiry: "Mar 20, 2026",
-    created: "Mar 15, 2026 09:00",
-    account: "mt5-12345",
-  },
-  {
-    id: "O002",
-    symbol: "GBP/USD",
-    type: "Sell Stop",
-    volume: "1.00",
-    price: "1.2650",
-    sl: "1.2750",
-    tp: "1.2500",
-    expiry: "GTC",
-    created: "Mar 14, 2026 11:30",
-    account: "mt5-12346",
-  },
-]
-
-const tradeHistory = [
-  {
-    id: "H001",
-    symbol: "EUR/USD",
-    type: "Buy",
-    volume: "0.50",
-    openPrice: "1.0810",
-    closePrice: "1.0865",
-    profit: "+$275.00",
-    profitType: "positive",
-    openTime: "Mar 12, 2026 10:00",
-    closeTime: "Mar 13, 2026 14:30",
-    account: "mt5-12345",
-  },
-  {
-    id: "H002",
-    symbol: "USD/JPY",
-    type: "Sell",
-    volume: "1.00",
-    openPrice: "150.20",
-    closePrice: "149.80",
-    profit: "+$268.00",
-    profitType: "positive",
-    openTime: "Mar 11, 2026 09:15",
-    closeTime: "Mar 12, 2026 16:45",
-    account: "mt5-12346",
-  },
-  {
-    id: "H003",
-    symbol: "GBP/USD",
-    type: "Buy",
-    volume: "0.25",
-    openPrice: "1.2780",
-    closePrice: "1.2720",
-    profit: "-$150.00",
-    profitType: "negative",
-    openTime: "Mar 10, 2026 14:00",
-    closeTime: "Mar 11, 2026 08:30",
-    account: "mt5-12345",
-  },
-  {
-    id: "H004",
-    symbol: "XAU/USD",
-    type: "Sell",
-    volume: "0.05",
-    openPrice: "2050.00",
-    closePrice: "2030.00",
-    profit: "+$100.00",
-    profitType: "positive",
-    openTime: "Mar 09, 2026 11:00",
-    closeTime: "Mar 10, 2026 09:15",
-    account: "mt5-12346",
-  },
-  {
-    id: "H005",
-    symbol: "EUR/USD",
-    type: "Sell",
-    volume: "1.00",
-    openPrice: "1.0900",
-    closePrice: "1.0850",
-    profit: "+$500.00",
-    profitType: "positive",
-    openTime: "Mar 08, 2026 13:30",
-    closeTime: "Mar 09, 2026 10:00",
-    account: "mt5-12345",
-  },
-]
-
-const pnlData = [
-  { date: "Mar 1", pnl: 1200 },
-  { date: "Mar 3", pnl: 1450 },
-  { date: "Mar 5", pnl: 1100 },
-  { date: "Mar 7", pnl: 1680 },
-  { date: "Mar 9", pnl: 1780 },
-  { date: "Mar 11", pnl: 2046 },
-  { date: "Mar 13", pnl: 1890 },
-  { date: "Mar 15", pnl: 2638 },
-]
-
-const TRADING_STATE_STORAGE_KEY = "forexpro-trading-state"
+import { useTradingSim } from "@/lib/trading/use-trading-sim"
 
 export default function TradingPage() {
-  const [symbolFilter, setSymbolFilter] = useState<string | null>(null)
-  const [openPositions, setOpenPositions] = useState(initialOpenPositions)
-  const [pendingOrders, setPendingOrders] = useState(initialPendingOrders)
-  const [accountFilter, setAccountFilter] = useState("all")
+  const { state, metrics, actions } = useTradingSim()
+  const [symbolFilter, setSymbolFilter] = useState("all")
   const [showWinnersOnly, setShowWinnersOnly] = useState(false)
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    setSymbolFilter(params.get("symbol"))
-  }, [])
-
-  useEffect(() => {
-    const stored = localStorage.getItem(TRADING_STATE_STORAGE_KEY)
-    if (!stored) return
-    try {
-      const parsed = JSON.parse(stored) as { openPositions: typeof initialOpenPositions; pendingOrders: typeof initialPendingOrders }
-      if (Array.isArray(parsed.openPositions)) setOpenPositions(parsed.openPositions)
-      if (Array.isArray(parsed.pendingOrders)) setPendingOrders(parsed.pendingOrders)
-    } catch {
-      // ignore invalid local data
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem(TRADING_STATE_STORAGE_KEY, JSON.stringify({ openPositions, pendingOrders }))
-  }, [openPositions, pendingOrders])
-
+  const allSymbols = useMemo(() => Object.keys(state.quotes), [state.quotes])
   const visibleOpenPositions = useMemo(() => {
-    return openPositions.filter((position) => {
-      const symbolMatch = symbolFilter ? position.symbol === symbolFilter : true
-      const profitMatch = showWinnersOnly ? position.profitType === "positive" : true
-      const accountMatch = accountFilter === "all" ? true : position.account === accountFilter
-      return symbolMatch && profitMatch && accountMatch
+    return state.positions.filter((position) => {
+      const symbolMatch = symbolFilter === "all" ? true : position.symbol === symbolFilter
+      const profitMatch = showWinnersOnly ? position.unrealizedPnl > 0 : true
+      return symbolMatch && profitMatch
     })
-  }, [openPositions, symbolFilter, showWinnersOnly, accountFilter])
+  }, [state.positions, symbolFilter, showWinnersOnly])
 
   const visiblePendingOrders = useMemo(() => {
-    return pendingOrders.filter((order) => (accountFilter === "all" ? true : order.account === accountFilter))
-  }, [pendingOrders, accountFilter])
+    return state.pendingOrders.filter((order) => (symbolFilter === "all" ? true : order.symbol === symbolFilter))
+  }, [state.pendingOrders, symbolFilter])
 
   const visibleTradeHistory = useMemo(() => {
-    return tradeHistory.filter((trade) => {
-      const profitMatch = showWinnersOnly ? trade.profitType === "positive" : true
-      const accountMatch = accountFilter === "all" ? true : trade.account === accountFilter
-      return profitMatch && accountMatch
+    return state.history.filter((trade) => {
+      const profitMatch = showWinnersOnly ? trade.realizedPnl > 0 : true
+      const symbolMatch = symbolFilter === "all" ? true : trade.symbol === symbolFilter
+      return profitMatch && symbolMatch
     })
-  }, [accountFilter, showWinnersOnly])
-
-  const openPnL = useMemo(() => {
-    return openPositions.reduce((acc, position) => acc + Number(position.profit.replace(/[^0-9.-]/g, "")), 0)
-  }, [openPositions])
-
-  const closePosition = (positionId: string) => {
-    const target = openPositions.find((position) => position.id === positionId)
-    if (!target) return
-    setOpenPositions((prev) => prev.filter((position) => position.id !== positionId))
-    toast.success(`Position ${positionId} closed`, { description: `${target.symbol} ${target.type} position closed at market` })
-  }
-
-  const cancelOrder = (orderId: string) => {
-    const target = pendingOrders.find((order) => order.id === orderId)
-    if (!target) return
-    setPendingOrders((prev) => prev.filter((order) => order.id !== orderId))
-    toast.success(`Order ${orderId} cancelled`, { description: `${target.symbol} ${target.type} order has been removed` })
-  }
+  }, [showWinnersOnly, state.history, symbolFilter])
 
   const closeAllPositions = () => {
-    if (!openPositions.length) {
+    if (!state.positions.length) {
       toast.info("No Open Positions")
       return
     }
-    setOpenPositions([])
+    actions.closeAllPositions()
     toast.success("All positions closed")
   }
+
+  const pnlData = useMemo(() => {
+    const sorted = [...state.history].slice(0, 8).reverse()
+    let running = 0
+    return sorted.map((item, idx) => {
+      running += item.realizedPnl
+      return { date: `T${idx + 1}`, pnl: Number(running.toFixed(2)) }
+    })
+  }, [state.history])
 
   return (
     <DashboardShell>
@@ -292,18 +79,16 @@ export default function TradingPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Trading Activity</h1>
-            <p className="text-muted-foreground">Monitor your positions, orders, and trade history.</p>
+            <p className="text-muted-foreground">Synced with Web Trader: positions, pending orders, and history update live.</p>
           </div>
-          <Select value={accountFilter} onValueChange={setAccountFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select account" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Accounts</SelectItem>
-              <SelectItem value="mt5-12345">MT5-12345</SelectItem>
-              <SelectItem value="mt5-12346">MT5-12346</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2 overflow-x-auto">
+            <Button size="sm" variant={symbolFilter === "all" ? "default" : "outline"} onClick={() => setSymbolFilter("all")}>All</Button>
+            {allSymbols.map((symbol) => (
+              <Button key={symbol} size="sm" variant={symbolFilter === symbol ? "default" : "outline"} onClick={() => setSymbolFilter(symbol)}>
+                {symbol}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Summary cards */}
@@ -313,8 +98,8 @@ export default function TradingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Open P/L</p>
-                  <p className={cn("text-2xl font-bold", openPnL >= 0 ? "text-chart-1" : "text-chart-2")}>
-                    {openPnL >= 0 ? "+" : ""}${openPnL.toFixed(2)}
+                  <p className={cn("text-2xl font-bold", metrics.openPnl >= 0 ? "text-chart-1" : "text-chart-2")}>
+                    {metrics.openPnl >= 0 ? "+" : ""}${metrics.openPnl.toFixed(2)}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-chart-1/50" />
@@ -326,7 +111,9 @@ export default function TradingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Closed P/L (MTD)</p>
-                  <p className="text-2xl font-bold text-chart-1">+$993.00</p>
+                  <p className={cn("text-2xl font-bold", metrics.realizedPnl >= 0 ? "text-chart-1" : "text-chart-2")}>
+                    {metrics.realizedPnl >= 0 ? "+" : ""}${metrics.realizedPnl.toFixed(2)}
+                  </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-chart-1/50" />
               </div>
@@ -337,9 +124,9 @@ export default function TradingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Open Positions</p>
-                  <p className="text-2xl font-bold text-foreground">{openPositions.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{state.positions.length}</p>
                 </div>
-                <div className="text-sm text-muted-foreground">3.60 lots</div>
+                <div className="text-sm text-muted-foreground">{metrics.openVolume.toFixed(2)} lots</div>
               </div>
             </CardContent>
           </Card>
@@ -347,10 +134,10 @@ export default function TradingPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Win Rate</p>
-                  <p className="text-2xl font-bold text-foreground">78%</p>
+                  <p className="text-sm font-medium text-muted-foreground">Equity</p>
+                  <p className="text-2xl font-bold text-foreground">${metrics.equity.toFixed(2)}</p>
                 </div>
-                <div className="text-sm text-muted-foreground">7/9 trades</div>
+                <div className="text-sm text-muted-foreground">Balance ${state.balance.toFixed(2)}</div>
               </div>
             </CardContent>
           </Card>
@@ -360,7 +147,7 @@ export default function TradingPage() {
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle>Profit/Loss Overview</CardTitle>
-            <CardDescription>Your cumulative P/L over the last 15 days</CardDescription>
+            <CardDescription>Realized P/L curve from your latest closed trades</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -448,11 +235,10 @@ export default function TradingPage() {
                         <TableHead className="text-muted-foreground">Symbol</TableHead>
                         <TableHead className="text-muted-foreground">Type</TableHead>
                         <TableHead className="text-muted-foreground">Volume</TableHead>
-                        <TableHead className="text-muted-foreground">Open Price</TableHead>
+                        <TableHead className="text-muted-foreground">Entry</TableHead>
                         <TableHead className="text-muted-foreground">Current</TableHead>
                         <TableHead className="text-muted-foreground">S/L</TableHead>
                         <TableHead className="text-muted-foreground">T/P</TableHead>
-                        <TableHead className="text-muted-foreground">Swap</TableHead>
                         <TableHead className="text-right text-muted-foreground">Profit</TableHead>
                         <TableHead className="text-muted-foreground"></TableHead>
                       </TableRow>
@@ -465,30 +251,29 @@ export default function TradingPage() {
                             <Badge
                               variant="secondary"
                               className={cn(
-                                position.type === "Buy"
+                                position.side === "buy"
                                   ? "bg-chart-1/20 text-chart-1"
                                   : "bg-chart-2/20 text-chart-2"
                               )}
                             >
-                              {position.type}
+                              {position.side.toUpperCase()}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{position.volume}</TableCell>
-                          <TableCell className="text-muted-foreground">{position.openPrice}</TableCell>
+                          <TableCell className="text-muted-foreground">{position.volume.toFixed(2)}</TableCell>
+                          <TableCell className="text-muted-foreground">{position.entryPrice}</TableCell>
                           <TableCell className="text-muted-foreground">{position.currentPrice}</TableCell>
-                          <TableCell className="text-chart-2">{position.sl}</TableCell>
-                          <TableCell className="text-chart-1">{position.tp}</TableCell>
-                          <TableCell className="text-muted-foreground">{position.swap}</TableCell>
+                          <TableCell className="text-chart-2">{position.stopLoss ?? "-"}</TableCell>
+                          <TableCell className="text-chart-1">{position.takeProfit ?? "-"}</TableCell>
                           <TableCell
                             className={cn(
                               "text-right font-medium",
-                              position.profitType === "positive" ? "text-chart-1" : "text-chart-2"
+                              position.unrealizedPnl >= 0 ? "text-chart-1" : "text-chart-2"
                             )}
                           >
-                            {position.profit}
+                            {position.unrealizedPnl >= 0 ? "+" : ""}${position.unrealizedPnl.toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => closePosition(position.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => actions.closePosition(position.id)}>
                               <X className="h-4 w-4" />
                             </Button>
                           </TableCell>
@@ -516,10 +301,10 @@ export default function TradingPage() {
                         <TableHead className="text-muted-foreground">Symbol</TableHead>
                         <TableHead className="text-muted-foreground">Type</TableHead>
                         <TableHead className="text-muted-foreground">Volume</TableHead>
-                        <TableHead className="text-muted-foreground">Price</TableHead>
+                        <TableHead className="text-muted-foreground">Stop Price</TableHead>
+                        <TableHead className="text-muted-foreground">Limit Price</TableHead>
                         <TableHead className="text-muted-foreground">S/L</TableHead>
                         <TableHead className="text-muted-foreground">T/P</TableHead>
-                        <TableHead className="text-muted-foreground">Expiry</TableHead>
                         <TableHead className="text-muted-foreground"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -531,21 +316,21 @@ export default function TradingPage() {
                             <Badge
                               variant="secondary"
                               className={cn(
-                                order.type.includes("Buy")
+                                order.side === "buy"
                                   ? "bg-chart-1/20 text-chart-1"
                                   : "bg-chart-2/20 text-chart-2"
                               )}
                             >
-                              {order.type}
+                              {order.side.toUpperCase()} {order.type.toUpperCase()}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{order.volume}</TableCell>
-                          <TableCell className="text-muted-foreground">{order.price}</TableCell>
-                          <TableCell className="text-chart-2">{order.sl}</TableCell>
-                          <TableCell className="text-chart-1">{order.tp}</TableCell>
-                          <TableCell className="text-muted-foreground">{order.expiry}</TableCell>
+                          <TableCell className="text-muted-foreground">{order.volume.toFixed(2)}</TableCell>
+                          <TableCell className="text-muted-foreground">{order.stopPrice ?? "-"}</TableCell>
+                          <TableCell className="text-muted-foreground">{order.limitPrice ?? "-"}</TableCell>
+                          <TableCell className="text-chart-2">{order.stopLoss ?? "-"}</TableCell>
+                          <TableCell className="text-chart-1">{order.takeProfit ?? "-"}</TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => cancelOrder(order.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => actions.cancelPendingOrder(order.id)}>
                               <X className="h-4 w-4" />
                             </Button>
                           </TableCell>
@@ -584,10 +369,10 @@ export default function TradingPage() {
                         <TableHead className="text-muted-foreground">Symbol</TableHead>
                         <TableHead className="text-muted-foreground">Type</TableHead>
                         <TableHead className="text-muted-foreground">Volume</TableHead>
-                        <TableHead className="text-muted-foreground">Open Price</TableHead>
+                        <TableHead className="text-muted-foreground">Entry</TableHead>
                         <TableHead className="text-muted-foreground">Close Price</TableHead>
-                        <TableHead className="text-muted-foreground">Open Time</TableHead>
-                        <TableHead className="text-muted-foreground">Close Time</TableHead>
+                        <TableHead className="text-muted-foreground">Closed</TableHead>
+                        <TableHead className="text-muted-foreground">Reason</TableHead>
                         <TableHead className="text-right text-muted-foreground">Profit</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -599,26 +384,26 @@ export default function TradingPage() {
                             <Badge
                               variant="secondary"
                               className={cn(
-                                trade.type === "Buy"
+                                trade.side === "buy"
                                   ? "bg-chart-1/20 text-chart-1"
                                   : "bg-chart-2/20 text-chart-2"
                               )}
                             >
-                              {trade.type}
+                              {trade.side.toUpperCase()}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{trade.volume}</TableCell>
+                          <TableCell className="text-muted-foreground">{trade.volume.toFixed(2)}</TableCell>
                           <TableCell className="text-muted-foreground">{trade.openPrice}</TableCell>
                           <TableCell className="text-muted-foreground">{trade.closePrice}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{trade.openTime}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{trade.closeTime}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{new Date(trade.closedAt).toLocaleString()}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{trade.reason.replace("_", " ")}</TableCell>
                           <TableCell
                             className={cn(
                               "text-right font-medium",
-                              trade.profitType === "positive" ? "text-chart-1" : "text-chart-2"
+                              trade.realizedPnl >= 0 ? "text-chart-1" : "text-chart-2"
                             )}
                           >
-                            {trade.profit}
+                            {trade.realizedPnl >= 0 ? "+" : ""}${trade.realizedPnl.toFixed(2)}
                           </TableCell>
                         </TableRow>
                       ))}

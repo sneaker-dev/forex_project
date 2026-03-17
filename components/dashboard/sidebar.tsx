@@ -23,18 +23,22 @@ import {
   ChevronRight,
   Sparkles,
   BadgeDollarSign,
+  Wallet,
+  LifeBuoy,
 } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard",        href: "/",            icon: LayoutDashboard },
   { name: "Trading Accounts", href: "/accounts",    icon: CandlestickChart },
   { name: "Funds",            href: "/funds",       icon: BadgeDollarSign },
+  { name: "Wallet",           href: "/wallet",      icon: Wallet },
   { name: "Trading Activity", href: "/trading",     icon: BarChart2 },
   { name: "Web Trader",       href: "/web-trader",  icon: Globe2 },
   { name: "Analytics",        href: "/analytics",   icon: Newspaper },
   { name: "Referrals",        href: "/referrals",   icon: Users2 },
   { name: "Competitions",     href: "/competitions",icon: Trophy },
   { name: "Profile",          href: "/profile",     icon: UserCircle2 },
+  { name: "Support",          href: "/support",     icon: LifeBuoy },
 ]
 
 interface DashboardSidebarProps {
@@ -65,24 +69,10 @@ export function DashboardSidebar({ collapsed, onCollapsedChange, isMobile = fals
         isMobile ? "w-[260px]" : collapsed ? "w-[72px]" : "w-[260px]"
       )}
       style={{
-        backgroundImage: isDark
-          ? "url('/istockphoto-1369016721-612x612.jpg')"
-          : "url('/360_F_298846909_mssb9MpliUGU22kW0r0i7dMjPwdGMkZy.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'left center',
-        backgroundRepeat: 'no-repeat',
+        background: isDark ? "rgba(7,14,30,0.74)" : "rgba(248,250,252,0.78)",
+        backdropFilter: "none",
       }}
     >
-      {/* Theme overlay for readability */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: isDark
-            ? 'linear-gradient(180deg, rgba(4,10,24,0.87) 0%, rgba(6,14,32,0.92) 100%)'
-            : 'linear-gradient(180deg, rgba(248,250,252,0.90) 0%, rgba(241,245,249,0.94) 100%)',
-        }}
-      />
-
       <div className="relative flex h-full flex-col">
         {/* Logo */}
         <div className={cn(
@@ -103,7 +93,7 @@ export function DashboardSidebar({ collapsed, onCollapsedChange, isMobile = fals
           {!collapsed && (
             <div className="flex flex-col leading-none">
               <span className="text-[17px] font-bold text-sidebar-foreground tracking-tight">ForexPro</span>
-              <span className="text-[9px] text-sidebar-foreground/40 uppercase tracking-[0.15em] mt-0.5">
+              <span className="text-[9px] text-sidebar-foreground/60 uppercase tracking-[0.15em] mt-0.5">
                 Trading Platform
               </span>
             </div>
@@ -124,7 +114,7 @@ export function DashboardSidebar({ collapsed, onCollapsedChange, isMobile = fals
                   collapsed ? "justify-center px-2" : "gap-3 px-3",
                   isActive
                     ? "bg-primary/15 text-primary"
-                    : "text-sidebar-foreground/55 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
                 )}
                 style={{ animationDelay: `${index * 30}ms` }}
               >
@@ -141,7 +131,7 @@ export function DashboardSidebar({ collapsed, onCollapsedChange, isMobile = fals
                 </div>
                 {!collapsed && <span className="truncate">{item.name}</span>}
                 {isActive && !collapsed && (
-                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 )}
               </Link>
             )
@@ -154,7 +144,7 @@ export function DashboardSidebar({ collapsed, onCollapsedChange, isMobile = fals
             href="/settings"
             title={collapsed ? "Settings" : undefined}
             className={cn(
-              "group flex items-center rounded-xl py-2.5 text-sm font-medium text-sidebar-foreground/55 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-all duration-200",
+              "group flex items-center rounded-xl py-2.5 text-sm font-medium text-sidebar-foreground/75 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-all duration-200",
               collapsed ? "justify-center px-2" : "gap-3 px-3"
             )}
           >
@@ -165,7 +155,7 @@ export function DashboardSidebar({ collapsed, onCollapsedChange, isMobile = fals
           </Link>
           <button
             className={cn(
-              "group flex w-full items-center rounded-xl py-2.5 text-sm font-medium text-sidebar-foreground/55 hover:bg-destructive/10 hover:text-destructive transition-all duration-200",
+              "group flex w-full items-center rounded-xl py-2.5 text-sm font-medium text-sidebar-foreground/75 hover:bg-destructive/10 hover:text-destructive transition-all duration-200",
               collapsed ? "justify-center px-2" : "gap-3 px-3"
             )}
             title={collapsed ? "Log out" : undefined}

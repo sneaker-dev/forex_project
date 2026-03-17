@@ -109,6 +109,40 @@ const tierLevels = [
   { name: "Platinum", min: 30, max: Infinity, commission: "3.5%", benefits: "+ Exclusive rewards" },
 ]
 
+const ibTree = {
+  id: "you",
+  name: "You",
+  code: "FOREXPRO",
+  tier1: [
+    {
+      id: "l1-a",
+      name: "Alice Johnson",
+      volume: "$5,250",
+      children: [
+        {
+          id: "l2-a1",
+          name: "Carol Williams",
+          volume: "$2,100",
+          children: [{ id: "l3-a1", name: "Ivy Martin", volume: "$850" }],
+        },
+      ],
+    },
+    {
+      id: "l1-b",
+      name: "Bob Smith",
+      volume: "$12,000",
+      children: [
+        {
+          id: "l2-b1",
+          name: "David Brown",
+          volume: "$8,500",
+          children: [{ id: "l3-b1", name: "Noah Wilson", volume: "$1,420" }],
+        },
+      ],
+    },
+  ],
+}
+
 export default function ReferralsPage() {
   const [copied, setCopied] = useState(false)
   const [referralCode, setReferralCode] = useState(generateReferralCode())
@@ -298,6 +332,55 @@ export default function ReferralsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Multi-tier IB Tree */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle>Multi-tier IB Tree</CardTitle>
+            <CardDescription>Network structure across Level 1, Level 2, and Level 3 referrals</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-xl border border-border p-4 space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+                {ibTree.name}
+                <span className="text-xs text-primary/80">({ibTree.code})</span>
+              </div>
+
+              <div className="space-y-3 pl-2">
+                {ibTree.tier1.map((l1) => (
+                  <div key={l1.id} className="rounded-lg border border-border bg-secondary/20 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold text-foreground">Level 1: {l1.name}</p>
+                      <p className="text-sm text-chart-1">Volume {l1.volume}</p>
+                    </div>
+
+                    <div className="mt-3 space-y-2 border-l border-border pl-4">
+                      {l1.children.map((l2) => (
+                        <div key={l2.id} className="rounded-md border border-border bg-secondary/30 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-medium text-foreground">Level 2: {l2.name}</p>
+                            <p className="text-sm text-chart-1">Volume {l2.volume}</p>
+                          </div>
+
+                          <div className="mt-2 space-y-2 border-l border-border pl-4">
+                            {l2.children.map((l3) => (
+                              <div key={l3.id} className="rounded-md border border-border bg-background/70 p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-foreground">Level 3: {l3.name}</p>
+                                  <p className="text-xs text-chart-1">Volume {l3.volume}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Commission Chart */}
         <Card className="bg-card border-border">

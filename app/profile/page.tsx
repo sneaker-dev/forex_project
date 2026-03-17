@@ -22,6 +22,8 @@ import {
   Mail,
   Phone,
   MapPin,
+  CalendarDays,
+  Globe2,
   Shield,
   Lock,
   Smartphone,
@@ -33,9 +35,13 @@ import {
   Camera,
   Eye,
   EyeOff,
+  Save,
+  Send,
+  LogOut,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
 const initialKycSteps = [
@@ -72,9 +78,23 @@ const securitySettings = [
   },
 ]
 
+const PROFILE_STORAGE_KEY = "forexpro-profile-state"
+
 export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState("profile")
   const [showPassword, setShowPassword] = useState(false)
   const [kycSteps, setKycSteps] = useState(initialKycSteps)
+  const [kycSubmitted, setKycSubmitted] = useState(false)
+  const [kycSubmittedAt, setKycSubmittedAt] = useState<string | null>(null)
+  const [profileForm, setProfileForm] = useState({
+    firstName: "John",
+    lastName: "Doe",
+    email: "john.doe@example.com",
+    phone: "+1 (555) 123-4567",
+    dob: "1990-05-15",
+    country: "us",
+    address: "123 Trading Street, New York, NY 10001",
+  })
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [addressDocument, setAddressDocument] = useState<string | null>(null)
   const [selfieDocument, setSelfieDocument] = useState<string | null>(null)
@@ -91,8 +111,40 @@ export default function ProfilePage() {
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const addressInputRef = useRef<HTMLInputElement>(null)
   const selfieInputRef = useRef<HTMLInputElement>(null)
+  const kycComplete = kycSteps.every((step) => step.status === "completed")
+  const fullName = `${profileForm.firstName} ${profileForm.lastName}`.trim()
 
   const kycProgress = (kycSteps.filter((s) => s.status === "completed").length / kycSteps.length) * 100
+
+  useEffect(() => {
+    const stored = localStorage.getItem(PROFILE_STORAGE_KEY)
+    if (!stored) return
+    try {
+      const parsed = JSON.parse(stored) as {
+        profileForm?: typeof profileForm
+        settings?: Record<string, boolean>
+        sessions?: typeof sessions
+        kycSteps?: typeof initialKycSteps
+        kycSubmitted?: boolean
+        kycSubmittedAt?: string | null
+      }
+      if (parsed.profileForm) setProfileForm(parsed.profileForm)
+      if (parsed.settings) setSettings(parsed.settings)
+      if (parsed.sessions) setSessions(parsed.sessions)
+      if (parsed.kycSteps) setKycSteps(parsed.kycSteps)
+      if (typeof parsed.kycSubmitted === "boolean") setKycSubmitted(parsed.kycSubmitted)
+      if (typeof parsed.kycSubmittedAt === "string" || parsed.kycSubmittedAt === null) setKycSubmittedAt(parsed.kycSubmittedAt ?? null)
+    } catch {
+      // ignore invalid local data
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(
+      PROFILE_STORAGE_KEY,
+      JSON.stringify({ profileForm, settings, sessions, kycSteps, kycSubmitted, kycSubmittedAt })
+    )
+  }, [profileForm, settings, sessions, kycSteps, kycSubmitted, kycSubmittedAt])
 
   const passwordRules = useMemo(
     () => ({
@@ -155,6 +207,37 @@ export default function ProfilePage() {
     toast.success("Password Updated", { description: "Your password has been changed successfully." })
   }
 
+  const handleProfileSave = () => {
+    if (!profileForm.firstName || !profileForm.lastName || !profileForm.email || !profileForm.phone) {
+      toast.error("Missing Fields", { description: "Please complete required profile fields." })
+      return
+    }
+    toast.success("Profile Updated", { description: "Your personal information was saved." })
+  }
+
+  const handleSubmitKyc = () => {
+    if (!kycComplete) {
+      toast.error("KYC Incomplete", { description: "Please complete all verification steps before submitting." })
+      return
+    }
+    if (!addressDocument || !selfieDocument) {
+      toast.error("Documents Missing", { description: "Please upload required KYC documents." })
+      return
+    }
+    setKycSubmitted(true)
+    setKycSubmittedAt(new Date().toLocaleString())
+    toast.success("KYC Submitted", { description: "Your KYC package has been sent for compliance review." })
+  }
+
+  const handleSaveSecuritySettings = () => {
+    toast.success("Security Preferences Saved", { description: "Your security controls are up to date." })
+  }
+
+  const revokeAllOtherSessions = () => {
+    setSessions((prev) => prev.filter((session) => session.current))
+    toast.success("Sessions Revoked", { description: "All other active sessions were logged out." })
+  }
+
   return (
     <DashboardShell>
       <div className="space-y-6">
@@ -165,13 +248,16 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile Overview */}
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10">
           <CardContent className="pt-6">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
               <div className="relative">
                 <Avatar className="h-24 w-24">
                   {avatarPreview ? <AvatarImage src={avatarPreview} alt="Profile" /> : null}
-                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">JD</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                    {(profileForm.firstName[0] ?? "J").toUpperCase()}
+                    {(profileForm.lastName[0] ?? "D").toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <Button
                   size="icon"
@@ -191,10 +277,10 @@ export default function ProfilePage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-bold text-foreground">John Doe</h2>
+                  <h2 className="text-xl font-bold text-foreground">{fullName}</h2>
                   <Badge className="bg-chart-1/20 text-chart-1">Verified</Badge>
                 </div>
-                <p className="text-muted-foreground">john.doe@example.com</p>
+                <p className="text-muted-foreground">{profileForm.email}</p>
                 <p className="text-sm text-muted-foreground mt-1">Member since January 2024</p>
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
@@ -204,24 +290,26 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">KYC Status:</span>
-                  <Badge variant="secondary" className="bg-chart-4/20 text-chart-4">In Progress</Badge>
+                  <Badge variant="secondary" className={cn(kycSubmitted ? "bg-chart-1/20 text-chart-1" : "bg-chart-4/20 text-chart-4")}>
+                    {kycSubmitted ? "Submitted" : "In Progress"}
+                  </Badge>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="profile" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="kyc">KYC Verification</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="password">Password</TabsTrigger>
+            <TabsTrigger value="profile" className="gap-1.5"><User className="h-4 w-4" />Profile</TabsTrigger>
+            <TabsTrigger value="kyc" className="gap-1.5"><FileText className="h-4 w-4" />KYC Verification</TabsTrigger>
+            <TabsTrigger value="security" className="gap-1.5"><Shield className="h-4 w-4" />Security</TabsTrigger>
+            <TabsTrigger value="password" className="gap-1.5"><Lock className="h-4 w-4" />Password</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
               <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
                 <CardDescription>Update your personal details</CardDescription>
@@ -231,31 +319,49 @@ export default function ProfilePage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field>
                       <FieldLabel>First Name</FieldLabel>
-                      <Input defaultValue="John" />
+                      <div className="relative">
+                        <User className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-9" value={profileForm.firstName} onChange={(e) => setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))} />
+                      </div>
                     </Field>
                     <Field>
                       <FieldLabel>Last Name</FieldLabel>
-                      <Input defaultValue="Doe" />
+                      <div className="relative">
+                        <User className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-9" value={profileForm.lastName} onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))} />
+                      </div>
                     </Field>
                   </div>
                   <Field>
                     <FieldLabel>Email Address</FieldLabel>
-                    <Input type="email" defaultValue="john.doe@example.com" />
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-9" type="email" value={profileForm.email} onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))} />
+                    </div>
                   </Field>
                   <Field>
                     <FieldLabel>Phone Number</FieldLabel>
-                    <Input type="tel" defaultValue="+1 (555) 123-4567" />
+                    <div className="relative">
+                      <Phone className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-9" type="tel" value={profileForm.phone} onChange={(e) => setProfileForm((prev) => ({ ...prev, phone: e.target.value }))} />
+                    </div>
                   </Field>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field>
                       <FieldLabel>Date of Birth</FieldLabel>
-                      <Input type="date" defaultValue="1990-05-15" />
+                      <div className="relative">
+                        <CalendarDays className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-9" type="date" value={profileForm.dob} onChange={(e) => setProfileForm((prev) => ({ ...prev, dob: e.target.value }))} />
+                      </div>
                     </Field>
                     <Field>
                       <FieldLabel>Country</FieldLabel>
-                      <Select defaultValue="us">
+                      <Select value={profileForm.country} onValueChange={(value) => setProfileForm((prev) => ({ ...prev, country: value }))}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
+                          <div className="flex items-center gap-2">
+                            <Globe2 className="h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select country" />
+                          </div>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="us">United States</SelectItem>
@@ -269,11 +375,14 @@ export default function ProfilePage() {
                   </div>
                   <Field>
                     <FieldLabel>Address</FieldLabel>
-                    <Input defaultValue="123 Trading Street, New York, NY 10001" />
+                    <div className="relative">
+                      <MapPin className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-9" value={profileForm.address} onChange={(e) => setProfileForm((prev) => ({ ...prev, address: e.target.value }))} />
+                    </div>
                   </Field>
                 </FieldGroup>
                 <div className="flex justify-end mt-6">
-                  <Button onClick={() => toast.success('Profile Updated', { description: 'Your changes have been saved' })}>Save Changes</Button>
+                  <Button className="gap-2" onClick={handleProfileSave}><Save className="h-4 w-4" />Save Changes</Button>
                 </div>
               </CardContent>
             </Card>
@@ -281,12 +390,19 @@ export default function ProfilePage() {
 
           {/* KYC Tab */}
           <TabsContent value="kyc" className="space-y-6">
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
               <CardHeader>
                 <CardTitle>Verification Progress</CardTitle>
                 <CardDescription>Complete all steps to fully verify your account</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className={cn("rounded-lg border p-3 text-sm", kycSubmitted ? "border-chart-1/30 bg-chart-1/10 text-chart-1" : "border-border bg-secondary/40 text-muted-foreground")}>
+                  {kycSubmitted ? (
+                    <span>KYC submitted {kycSubmittedAt ? `on ${kycSubmittedAt}` : ""}. Compliance review in progress.</span>
+                  ) : (
+                    <span>Complete remaining steps and press Submit KYC for review.</span>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Overall Progress</span>
@@ -300,10 +416,10 @@ export default function ProfilePage() {
                     <div
                       key={step.id}
                       className={cn(
-                        "flex items-center gap-4 rounded-lg border p-4",
+                        "flex items-center gap-4 rounded-lg border p-4 transition-all duration-300",
                         step.status === "completed"
                           ? "border-chart-1/30 bg-chart-1/5"
-                          : "border-border"
+                          : "border-border hover:border-primary/30 hover:bg-primary/5"
                       )}
                     >
                       <div
@@ -341,12 +457,18 @@ export default function ProfilePage() {
                     </div>
                   ))}
                 </div>
+                <div className="flex justify-end">
+                  <Button className="gap-2" onClick={handleSubmitKyc} disabled={kycSubmitted || !kycComplete}>
+                    <Send className="h-4 w-4" />
+                    {kycSubmitted ? "KYC Submitted" : "Submit KYC"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Document Upload */}
             <div className="grid gap-6 md:grid-cols-2">
-              <Card className="bg-card border-border">
+              <Card className="bg-card border-border transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
@@ -356,7 +478,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-all duration-300 cursor-pointer hover:bg-primary/5"
                     onClick={() => addressInputRef.current?.click()}
                   >
                     <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
@@ -375,7 +497,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-card border-border">
+              <Card className="bg-card border-border transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Camera className="h-5 w-5" />
@@ -385,7 +507,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-all duration-300 cursor-pointer hover:bg-primary/5"
                     onClick={() => selfieInputRef.current?.click()}
                   >
                     <Camera className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
@@ -406,7 +528,7 @@ export default function ProfilePage() {
 
           {/* Security Tab */}
           <TabsContent value="security" className="space-y-6">
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
               <CardHeader>
                 <CardTitle>Security Settings</CardTitle>
                 <CardDescription>Manage your account security preferences</CardDescription>
@@ -429,11 +551,14 @@ export default function ProfilePage() {
                     />
                   </div>
                 ))}
+                <div className="flex justify-end pt-2">
+                  <Button className="gap-2" onClick={handleSaveSecuritySettings}><Shield className="h-4 w-4" />Save Security Settings</Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* 2FA Setup */}
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Smartphone className="h-5 w-5" />
@@ -455,8 +580,11 @@ export default function ProfilePage() {
                     size="sm"
                     className="ml-auto"
                     onClick={() => {
-                      setSettings((prev) => ({ ...prev, "2fa": !prev["2fa"] }))
-                      toast.success(settings["2fa"] ? "2FA Disabled" : "2FA Enabled")
+                      setSettings((prev) => {
+                        const next = !prev["2fa"]
+                        toast.success(next ? "2FA Enabled" : "2FA Disabled")
+                        return { ...prev, "2fa": next }
+                      })
                     }}
                   >
                     Manage
@@ -466,12 +594,18 @@ export default function ProfilePage() {
             </Card>
 
             {/* Active Sessions */}
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border transition-all duration-300 hover:shadow-md hover:shadow-primary/10">
               <CardHeader>
                 <CardTitle>Active Sessions</CardTitle>
                 <CardDescription>Devices currently logged into your account</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={revokeAllOtherSessions}>
+                    <LogOut className="h-4 w-4" />
+                    Revoke All Other Sessions
+                  </Button>
+                </div>
                 {sessions.map((session) => (
                   <div key={session.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
                     <div className="flex items-center gap-4">

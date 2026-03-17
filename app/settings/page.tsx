@@ -21,6 +21,10 @@ import {
   MessageSquare,
   Smartphone,
   Volume2,
+  Save,
+  Sparkles,
+  Shield,
+  SlidersHorizontal,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -73,6 +77,7 @@ const notificationSettings = [
 
 export default function SettingsPage() {
   const { setTheme } = useTheme()
+  const SETTINGS_STORAGE_KEY = "forexpro-settings"
   const [settings, setSettings] = useState(
     notificationSettings.reduce((acc, s) => ({ ...acc, [s.id]: s.enabled }), {} as Record<string, boolean>)
   )
@@ -85,7 +90,7 @@ export default function SettingsPage() {
   const pushSettings = notificationSettings.filter((s) => s.category === "Push")
 
   useEffect(() => {
-    const raw = localStorage.getItem("forexpro-settings")
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY)
     if (!raw) return
     try {
       const parsed = JSON.parse(raw) as {
@@ -107,7 +112,7 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     localStorage.setItem(
-      "forexpro-settings",
+      SETTINGS_STORAGE_KEY,
       JSON.stringify({
         toggles: settings,
         language,
@@ -120,17 +125,50 @@ export default function SettingsPage() {
     toast.success('Settings Saved', { description: 'Your preferences have been updated' })
   }
 
+  const restoreDefaults = () => {
+    setSettings(notificationSettings.reduce((acc, s) => ({ ...acc, [s.id]: s.enabled }), {} as Record<string, boolean>))
+    setLanguage("en")
+    setTimezone("utc-5")
+    setAppTheme("dark")
+    setSoundEffects("on")
+    toast.success("Defaults Restored")
+  }
+
   return (
     <DashboardShell>
       <div className="space-y-6">
         {/* Page header */}
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground">Settings</h1>
           <p className="text-muted-foreground">Manage your application preferences.</p>
         </div>
 
+        <Card className="border-primary/30 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent">
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-muted-foreground">Configuration Profile</p>
+                <p className="text-lg font-semibold text-foreground inline-flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Enterprise Preference Suite
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="gap-2" onClick={restoreDefaults}>
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Restore Defaults
+                </Button>
+                <Button className="gap-2" onClick={handleSave}>
+                  <Save className="h-4 w-4" />
+                  Save All Settings
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Preferences */}
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
@@ -218,7 +256,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Email Notifications */}
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
@@ -248,7 +286,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Push Notifications */}
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Smartphone className="h-5 w-5" />
@@ -277,10 +315,35 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button size="lg" onClick={handleSave}>Save All Settings</Button>
-        </div>
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Settings Summary
+            </CardTitle>
+            <CardDescription>Review your active configuration before saving</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs text-muted-foreground">Theme</p>
+              <p className="font-medium text-foreground capitalize">{appTheme}</p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs text-muted-foreground">Language</p>
+              <p className="font-medium text-foreground uppercase">{language}</p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs text-muted-foreground">Timezone</p>
+              <p className="font-medium text-foreground">{timezone}</p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs text-muted-foreground">Enabled Alerts</p>
+              <p className="font-medium text-foreground">
+                {Object.values(settings).filter(Boolean).length}/{Object.values(settings).length}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardShell>
   )

@@ -18,8 +18,6 @@ const stats = [
     gradient: "from-emerald-500/15 to-emerald-500/0",
     iconBg: "bg-emerald-500/10",
     iconColor: "text-emerald-500",
-    sparkPath: "M0,35 Q20,28 40,22 T80,12 L100,8 L100,40 L0,40 Z",
-    sparkColor: "#10b981",
   },
   {
     name: "Equity",
@@ -31,8 +29,6 @@ const stats = [
     gradient: "from-sky-500/15 to-sky-500/0",
     iconBg: "bg-sky-500/10",
     iconColor: "text-sky-500",
-    sparkPath: "M0,30 Q25,24 50,20 T90,12 L100,9 L100,40 L0,40 Z",
-    sparkColor: "#0ea5e9",
   },
   {
     name: "Margin Used",
@@ -44,8 +40,6 @@ const stats = [
     gradient: "from-amber-500/15 to-amber-500/0",
     iconBg: "bg-amber-500/10",
     iconColor: "text-amber-500",
-    sparkPath: "M0,14 Q25,20 50,26 T85,32 L100,35 L100,40 L0,40 Z",
-    sparkColor: "#f59e0b",
   },
   {
     name: "Free Margin",
@@ -57,8 +51,6 @@ const stats = [
     gradient: "from-violet-500/15 to-violet-500/0",
     iconBg: "bg-violet-500/10",
     iconColor: "text-violet-500",
-    sparkPath: "M0,36 Q20,28 45,20 T80,10 L100,7 L100,40 L0,40 Z",
-    sparkColor: "#8b5cf6",
   },
 ]
 
@@ -68,22 +60,9 @@ export function StatsCards() {
       {stats.map((stat, index) => (
         <Card
           key={stat.name}
-          className="group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 card-hover"
+          className="group relative overflow-hidden bg-card border-border card-hover"
           style={{ animationDelay: `${index * 80}ms` }}
         >
-          {/* Hover gradient fill */}
-          <div className={cn(
-            "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-            stat.gradient
-          )} />
-
-          {/* Sparkline decoration */}
-          <div className="absolute bottom-0 right-0 w-28 h-14 opacity-25 pointer-events-none">
-            <svg viewBox="0 0 100 40" className="w-full h-full" preserveAspectRatio="none">
-              <path d={stat.sparkPath} fill={stat.sparkColor} />
-            </svg>
-          </div>
-
           <CardContent className="relative p-6">
             <div className="flex items-start justify-between mb-4">
               <div className={cn(

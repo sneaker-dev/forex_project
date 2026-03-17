@@ -2,9 +2,15 @@
 
 import { DashboardShell } from "@/components/dashboard/shell"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Calendar, TrendingUp, AlertCircle, Flag } from "lucide-react"
 import { useMemo, useState } from "react"
 
@@ -126,6 +132,8 @@ export default function AnalyticsPage() {
   const [eventSearch, setEventSearch] = useState("")
   const [newsSearch, setNewsSearch] = useState("")
   const [impactFilter, setImpactFilter] = useState<"all" | "high" | "medium" | "low">("all")
+  const [calendarRegion, setCalendarRegion] = useState("all")
+  const [newsCategory, setNewsCategory] = useState("all")
 
   const filteredEvents = useMemo(() => {
     return economicEvents.filter((event) => {
@@ -133,28 +141,21 @@ export default function AnalyticsPage() {
         event.event.toLowerCase().includes(eventSearch.toLowerCase()) ||
         event.country.toLowerCase().includes(eventSearch.toLowerCase())
       const matchesImpact = impactFilter === "all" || event.impact.toLowerCase() === impactFilter
-      return matchesSearch && matchesImpact
+      const matchesRegion = calendarRegion === "all" || event.country.toLowerCase() === calendarRegion
+      return matchesSearch && matchesImpact && matchesRegion
     })
-  }, [eventSearch, impactFilter])
+  }, [eventSearch, impactFilter, calendarRegion])
 
   const filteredNews = useMemo(() => {
     return newsItems.filter((item) => {
-      return (
+      const matchesSearch =
         item.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
         item.category.toLowerCase().includes(newsSearch.toLowerCase()) ||
         item.source.toLowerCase().includes(newsSearch.toLowerCase())
-      )
+      const matchesCategory = newsCategory === "all" || item.category.toLowerCase() === newsCategory
+      return matchesSearch && matchesCategory
     })
-  }, [newsSearch])
-
-  const rotateImpactFilter = () => {
-    setImpactFilter((prev) => {
-      if (prev === "all") return "high"
-      if (prev === "high") return "medium"
-      if (prev === "medium") return "low"
-      return "all"
-    })
-  }
+  }, [newsSearch, newsCategory])
 
   return (
     <DashboardShell>
@@ -180,16 +181,37 @@ export default function AnalyticsPage() {
           {/* Economic Calendar Tab */}
           <TabsContent value="calendar" className="space-y-4">
             <Card className="p-6">
-              <div className="flex gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Input
                   placeholder="Search events..."
                   className="max-w-sm"
                   value={eventSearch}
                   onChange={(e) => setEventSearch(e.target.value)}
                 />
-                <Button variant="outline" onClick={rotateImpactFilter}>
-                  Filter: {impactFilter === "all" ? "All" : impactFilter}
-                </Button>
+                <div className="flex gap-2">
+                  <Select value={impactFilter} onValueChange={(value) => setImpactFilter(value as "all" | "high" | "medium" | "low")}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Impact" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Impact</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={calendarRegion} onValueChange={setCalendarRegion}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Regions</SelectItem>
+                      <SelectItem value="us">US</SelectItem>
+                      <SelectItem value="eu">EU</SelectItem>
+                      <SelectItem value="uk">UK</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -243,7 +265,22 @@ export default function AnalyticsPage() {
           {/* Market News Tab */}
           <TabsContent value="news" className="space-y-4">
             <div className="space-y-4">
-              <Input placeholder="Search news..." value={newsSearch} onChange={(e) => setNewsSearch(e.target.value)} />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Input placeholder="Search news..." value={newsSearch} onChange={(e) => setNewsSearch(e.target.value)} />
+                <Select value={newsCategory} onValueChange={setNewsCategory}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="monetary policy">Monetary Policy</SelectItem>
+                    <SelectItem value="inflation">Inflation</SelectItem>
+                    <SelectItem value="commodities">Commodities</SelectItem>
+                    <SelectItem value="fx">FX</SelectItem>
+                    <SelectItem value="equities">Equities</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid gap-4">
                 {filteredNews.map((item) => (
                 <Card key={item.id} className="p-5 hover:shadow-md transition-shadow">

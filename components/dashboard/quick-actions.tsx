@@ -57,7 +57,7 @@ const actions = [
 
 export function QuickActions() {
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+    <Card className="bg-card border-border">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold text-foreground">Quick Actions</CardTitle>
       </CardHeader>
@@ -68,18 +68,12 @@ export function QuickActions() {
               key={action.name}
               href={action.href}
               className={cn(
-                "group relative overflow-hidden rounded-xl border border-border/50 bg-card/50 p-4 transition-all duration-300 card-hover shadow-sm",
+                "group relative overflow-hidden rounded-xl border border-border bg-card p-4 transition-all duration-300 card-hover shadow-sm",
                 action.hoverBorder,
                 action.hoverShadow
               )}
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              {/* Gradient fill on hover */}
-              <div className={cn(
-                "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-                action.gradient
-              )} />
-
               <div className="relative flex flex-col items-center gap-3 text-center">
                 <div className={cn(
                   "flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg",

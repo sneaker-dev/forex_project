@@ -81,7 +81,7 @@ export function Announcements() {
   }
 
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/50 animate-slide-up" style={{ animationDelay: '400ms' }}>
+    <Card className="bg-card border-border animate-slide-up" style={{ animationDelay: '400ms' }}>
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
@@ -112,7 +112,7 @@ export function Announcements() {
                 key={announcement.id}
                 onClick={() => handleAnnouncementClick(announcement.id, announcement.title)}
                 className={cn(
-                  "group relative flex flex-col gap-3 rounded-xl border border-border/50 bg-card/50 p-4 transition-all duration-300 cursor-pointer card-hover",
+                  "group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-all duration-300 cursor-pointer card-hover",
                   config.borderColor
                 )}
                 style={{ animationDelay: `${(index + 5) * 50}ms` }}

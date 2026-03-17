@@ -207,6 +207,30 @@ export default function AccountsPage() {
                   Set up a new trading account. Choose your account type and preferences.
                 </DialogDescription>
               </DialogHeader>
+              <div className="rounded-xl border border-border bg-secondary/40 p-4 space-y-3">
+                <div>
+                  <p className="font-semibold text-foreground">Starter</p>
+                  <p className="text-sm text-muted-foreground">Perfect for beginners - start trading with just $50 and zero commission.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Min Deposit</p>
+                    <p className="font-semibold text-foreground">$50</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Leverage</p>
+                    <p className="font-semibold text-foreground">1:2000</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Spread</p>
+                    <p className="font-semibold text-foreground">0.18 pips</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Commission</p>
+                    <p className="font-semibold text-foreground">None</p>
+                  </div>
+                </div>
+              </div>
               <FieldGroup className="py-4">
                 <Field>
                   <FieldLabel>Account Name</FieldLabel>

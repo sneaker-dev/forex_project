@@ -46,7 +46,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       {/* Mobile sidebar */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-[260px] p-0 bg-sidebar/95 backdrop-blur-xl border-sidebar-border/50">
+        <SheetContent side="left" className="w-[260px] p-0 bg-sidebar/80 border-sidebar-border/50">
           <VisuallyHidden>
             <SheetTitle>Navigation Menu</SheetTitle>
           </VisuallyHidden>
@@ -54,16 +54,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </SheetContent>
       </Sheet>
 
-      {/* Ambient glow orbs — layered above the layout background */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-emerald-500/[0.07] blur-[160px] animate-float" />
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-blue-500/[0.05] blur-[140px] animate-float" style={{ animationDelay: '-3s' }} />
-      </div>
-
       {/* Main content */}
-      <div className={cn("transition-all duration-300 relative z-10", collapsed ? "lg:pl-[72px]" : "lg:pl-[260px]")}>
+      <div className={cn("transition-all duration-300 relative z-10 min-w-0", collapsed ? "lg:pl-[72px]" : "lg:pl-[260px]")}>
         <DashboardHeader onMenuClick={() => setMobileMenuOpen(true)} />
-        <main className="p-4 lg:p-6 animate-fade-in">
+        <main className="p-4 lg:p-6 animate-fade-in min-w-0 overflow-x-hidden">
           {children}
         </main>
       </div>

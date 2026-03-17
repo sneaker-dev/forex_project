@@ -4,7 +4,6 @@ import { DashboardShell } from "@/components/dashboard/shell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
@@ -14,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Trophy,
   Clock,
@@ -24,6 +23,8 @@ import {
   TrendingUp,
   Calendar,
   ChevronRight,
+  Crown,
+  Flame,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -85,26 +86,24 @@ const initialCompetitions = [
 ]
 
 const leaderboard = [
-  { rank: 1, name: "TraderPro", profit: "+$12,450.00", profitPercent: "+124.5%", trades: 89 },
-  { rank: 2, name: "FXMaster", profit: "+$10,280.00", profitPercent: "+102.8%", trades: 156 },
-  { rank: 3, name: "GoldHunter", profit: "+$8,920.00", profitPercent: "+89.2%", trades: 42 },
-  { rank: 4, name: "SwingKing", profit: "+$7,650.00", profitPercent: "+76.5%", trades: 28 },
-  { rank: 5, name: "ScalpMaster", profit: "+$6,890.00", profitPercent: "+68.9%", trades: 312 },
-  { rank: 6, name: "TrendRider", profit: "+$5,420.00", profitPercent: "+54.2%", trades: 67 },
-  { rank: 7, name: "PipHunter", profit: "+$4,850.00", profitPercent: "+48.5%", trades: 145 },
-  { rank: 8, name: "ForexNinja", profit: "+$4,120.00", profitPercent: "+41.2%", trades: 98 },
-  { rank: 9, name: "MarketWolf", profit: "+$3,680.00", profitPercent: "+36.8%", trades: 76 },
-  { rank: 10, name: "ChartPro", profit: "+$3,250.00", profitPercent: "+32.5%", trades: 54 },
-  { rank: 11, name: "TradeStar", profit: "+$2,890.00", profitPercent: "+28.9%", trades: 112 },
-  { rank: 12, name: "You", profit: "+$1,845.00", profitPercent: "+18.45%", trades: 34, isYou: true },
+  { rank: 1, name: "Hawk", username: "@hawkfx", points: 10000, roi: "+124.5%", country: "JP", rating: "68,950" },
+  { rank: 2, name: "ByteX", username: "@bytex", points: 5000, roi: "+102.8%", country: "US", rating: "51,420" },
+  { rank: 3, name: "Voyager", username: "@voyager", points: 2500, roi: "+89.2%", country: "SG", rating: "42,360" },
+  { rank: 4, name: "FXMaster", username: "@fxmaster", points: 2180, roi: "+76.5%", country: "DE", rating: "33,185" },
+  { rank: 5, name: "GoldHunter", username: "@goldhunter", points: 1980, roi: "+68.9%", country: "IN", rating: "29,560" },
+  { rank: 6, name: "ScalpMaster", username: "@scalpm", points: 1730, roi: "+54.2%", country: "KR", rating: "24,105" },
+  { rank: 7, name: "TrendRider", username: "@trendrider", points: 1620, roi: "+48.5%", country: "CN", rating: "21,940" },
+  { rank: 8, name: "PipHunter", username: "@piphunter", points: 1490, roi: "+41.2%", country: "BR", rating: "19,350" },
+  { rank: 9, name: "You", username: "@you", points: 1305, roi: "+36.8%", country: "UA", rating: "17,920", isYou: true },
+  { rank: 10, name: "MarketWolf", username: "@marketwolf", points: 1210, roi: "+32.5%", country: "UK", rating: "15,730" },
 ]
 
-const prizeDistribution = [
-  { place: "1st", prize: "$5,000", percent: 50 },
-  { place: "2nd", prize: "$2,500", percent: 25 },
-  { place: "3rd", prize: "$1,500", percent: 15 },
-  { place: "4th-10th", prize: "$150 each", percent: 10 },
-]
+const podium = [leaderboard[1], leaderboard[0], leaderboard[2]]
+const podiumAvatars: Record<number, string> = {
+  1: "/stock-broker-3d-icon-png-download-5625740.webp",
+  2: "/trader-3d-icon-png-download-4403852.webp",
+  3: "/crypto-trader-3d-icon-png-download-12328244.webp",
+}
 
 const pastResults = [
   { season: "February Sprint 2026", rank: 18, profit: "+$1,180.00", prize: "$0.00", participants: 460 },
@@ -246,115 +245,98 @@ export default function CompetitionsPage() {
           </Card>
         </div>
 
-        {/* Leaderboard and Prize Pool */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Leaderboard */}
-          <Card className="bg-card border-border lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Leaderboard - Weekly Championship</CardTitle>
-              <CardDescription>Top performers in the current competition</CardDescription>
-            </CardHeader>
-            <CardContent>
+        {/* Leaderboard */}
+        <Card className="border-[#1f3659] bg-[#060d1f] text-slate-100 overflow-hidden">
+          <CardHeader className="border-b border-[#1b2e4c] bg-[radial-gradient(ellipse_at_top,rgba(22,163,255,0.18),rgba(6,13,31,0.95)_64%)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-slate-100">Leaderboard - Rise to the Top</CardTitle>
+                <CardDescription className="text-slate-300/75">Live points ranking with podium highlights</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872] gap-1.5"><Flame className="h-3 w-3" />Live Points</Badge>
+                <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872]">$10,000 Pool</Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 p-4 sm:p-6">
+            <div className="grid gap-4 md:grid-cols-3 md:items-end">
+              {podium.map((item, idx) => {
+                const center = idx === 1
+                return (
+                  <div
+                    key={item.rank}
+                    className={cn(
+                      "rounded-2xl border p-4 text-center bg-[linear-gradient(180deg,rgba(42,120,236,0.24),rgba(7,17,38,0.92))]",
+                      center ? "border-cyan-300/70 md:scale-105" : "border-[#29466c]"
+                    )}
+                  >
+                    <Avatar className={cn("mx-auto mb-2", center ? "h-16 w-16" : "h-14 w-14")}>
+                      <AvatarImage src={podiumAvatars[item.rank]} alt={item.name} />
+                      <AvatarFallback className={cn("font-semibold", center ? "bg-cyan-300/25 text-cyan-100" : "bg-[#1a3358] text-cyan-100")}>
+                        {item.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm text-slate-100">{item.name}</p>
+                    <div className="mx-auto mt-2 w-fit rounded-md border border-[#355b8f] bg-[#11274b] px-2 py-1 text-xs text-cyan-100">
+                      #{item.rank} Rank
+                    </div>
+                    <p className="mt-2 text-lg font-semibold text-slate-100">{item.points.toLocaleString()}</p>
+                    <p className="text-xs text-slate-300/75">AP points</p>
+                    {center && (
+                      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-cyan-300/15 px-2 py-1 text-[11px] text-cyan-200">
+                        <Crown className="h-3 w-3" /> Leader
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="rounded-xl border border-[#1e3555] bg-[#050b19] p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-100">Top Users</p>
+                <Button size="sm" variant="outline" className="h-7 border-[#2a4f7b] bg-transparent text-slate-100 hover:bg-[#11284a]">
+                  Show all
+                </Button>
+              </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="text-muted-foreground w-16">Rank</TableHead>
-                      <TableHead className="text-muted-foreground">Trader</TableHead>
-                      <TableHead className="text-muted-foreground">Trades</TableHead>
-                      <TableHead className="text-muted-foreground">Profit %</TableHead>
-                      <TableHead className="text-right text-muted-foreground">Profit</TableHead>
+                    <TableRow className="border-[#1b2f4b] hover:bg-transparent">
+                      <TableHead className="text-slate-300/70 w-14">Rank</TableHead>
+                      <TableHead className="text-slate-300/70">User Name</TableHead>
+                      <TableHead className="text-slate-300/70">24h Return</TableHead>
+                      <TableHead className="text-right text-slate-300/70">User Rating</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {leaderboard.map((entry) => (
-                      <TableRow
-                        key={entry.rank}
-                        className={cn(
-                          "border-border",
-                          entry.isYou && "bg-primary/5"
-                        )}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {entry.rank <= 3 ? (
-                              <div
-                                className={cn(
-                                  "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold",
-                                  entry.rank === 1 && "bg-chart-4 text-chart-4-foreground",
-                                  entry.rank === 2 && "bg-gray-400 text-white",
-                                  entry.rank === 3 && "bg-amber-700 text-white"
-                                )}
-                              >
-                                {entry.rank}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground font-medium pl-1.5">{entry.rank}</span>
-                            )}
-                          </div>
-                        </TableCell>
+                      <TableRow key={entry.rank} className={cn("border-[#1b2f4b] hover:bg-[#0d1d38]", entry.isYou && "bg-[#12294a]")}>
+                        <TableCell className="text-slate-100 font-semibold">#{entry.rank}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-7 w-7">
-                              <AvatarFallback className="bg-secondary text-xs">
-                                {entry.name.slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
+                              <AvatarImage src={entry.rank <= 3 ? podiumAvatars[entry.rank] : undefined} alt={entry.name} />
+                              <AvatarFallback className="bg-[#132948] text-[10px] text-cyan-100">{entry.country}</AvatarFallback>
                             </Avatar>
-                            <span className={cn("font-medium", entry.isYou ? "text-primary" : "text-foreground")}>
-                              {entry.name}
-                            </span>
-                            {entry.isYou && (
-                              <Badge variant="secondary" className="text-xs">You</Badge>
-                            )}
+                            <div className="min-w-0">
+                              <p className={cn("text-sm font-medium", entry.isYou ? "text-cyan-300" : "text-slate-100")}>{entry.name}</p>
+                              <p className="text-xs text-slate-300/60">{entry.username}</p>
+                            </div>
+                            {entry.isYou && <Badge className="bg-cyan-400/15 text-cyan-200 border border-cyan-300/30">You</Badge>}
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{entry.trades}</TableCell>
-                        <TableCell className="text-chart-1 font-medium">{entry.profitPercent}</TableCell>
-                        <TableCell className="text-right font-semibold text-chart-1">{entry.profit}</TableCell>
+                        <TableCell className="text-emerald-400 font-medium">{entry.roi}</TableCell>
+                        <TableCell className="text-right text-slate-100 font-semibold">{entry.rating}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Prize Pool */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle>Prize Distribution</CardTitle>
-              <CardDescription>Weekly Championship prizes</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center py-4">
-                <Trophy className="h-12 w-12 mx-auto text-chart-4 mb-2" />
-                <p className="text-3xl font-bold text-foreground">$10,000</p>
-                <p className="text-sm text-muted-foreground">Total Prize Pool</p>
-              </div>
-              <div className="space-y-3">
-                {prizeDistribution.map((prize) => (
-                  <div key={prize.place} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold",
-                          prize.place === "1st" && "bg-chart-4/20 text-chart-4",
-                          prize.place === "2nd" && "bg-gray-400/20 text-gray-400",
-                          prize.place === "3rd" && "bg-amber-700/20 text-amber-700",
-                          prize.place === "4th-10th" && "bg-secondary text-muted-foreground"
-                        )}
-                      >
-                        {prize.place.replace(/[^0-9-]/g, '') || '4+'}
-                      </div>
-                      <span className="font-medium text-foreground">{prize.place}</span>
-                    </div>
-                    <span className="font-semibold text-foreground">{prize.prize}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Competition List */}
         <Tabs defaultValue="active" className="space-y-6">

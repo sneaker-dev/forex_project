@@ -80,14 +80,8 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         isDark ? "border-b border-white/[0.08]" : "border-b border-slate-300/70"
       )}
       style={{
-        backgroundImage: isDark
-          ? "url('/istockphoto-1369016721-612x612.jpg')"
-          : "url('/360_F_298846909_mssb9MpliUGU22kW0r0i7dMjPwdGMkZy.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat',
-        backgroundColor: isDark ? 'rgba(4,10,24,0.94)' : 'rgba(248,250,252,0.95)',
-        backgroundBlendMode: 'normal',
+        background: isDark ? "rgba(7,14,30,1)" : "rgba(248,250,252,1)",
+        backdropFilter: "none",
       }}
     >
       {/* Left — mobile menu & search */}
@@ -107,7 +101,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
           <Input
             type="search"
             placeholder="Search instruments, accounts…"
-            className="w-72 pl-9 pr-12 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary/30 transition-all"
+            className="w-72 pl-9 pr-12 bg-card border border-border/70 focus-visible:ring-1 focus-visible:ring-primary/30 transition-all"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border/50 bg-muted/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
             <Command className="h-2.5 w-2.5" />K
@@ -120,7 +114,6 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         {/* Live dot */}
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
           <span className="text-[11px] font-semibold text-emerald-500">Live</span>
@@ -154,7 +147,6 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
             <Button variant="ghost" size="icon" className="relative hover:bg-secondary/80">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
                 <Badge className="relative h-4 w-4 rounded-full p-0 flex items-center justify-center text-[9px] bg-primary border-0">
                   3
                 </Badge>

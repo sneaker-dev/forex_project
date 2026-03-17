@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
-import { BackgroundProvider } from '@/components/dashboard/background-provider'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -39,12 +38,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <BackgroundProvider />
-
-          {/* All app content sits above the background */}
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            {children}
-          </div>
+          {children}
           <Toaster 
             position="top-right" 
             richColors 

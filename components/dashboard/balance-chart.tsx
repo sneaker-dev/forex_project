@@ -23,7 +23,7 @@ export function BalanceChart() {
   const total = chartData.reduce((sum, item) => sum + item.value, 0)
 
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/50 h-full">
+    <Card className="bg-card border-border h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-foreground">Balance Distribution</CardTitle>
@@ -61,7 +61,7 @@ export function BalanceChart() {
                   if (active && payload && payload.length) {
                     const item = payload[0].payload
                     return (
-                      <div className="rounded-xl border border-border/50 bg-card/95 backdrop-blur-sm p-3 shadow-xl">
+                      <div className="rounded-xl border border-border bg-card p-3 shadow-xl">
                         <div className="flex items-center gap-2 mb-1">
                           <div 
                             className="h-2.5 w-2.5 rounded-full"
