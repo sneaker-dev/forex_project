@@ -37,7 +37,6 @@ import {
 import { cn } from "@/lib/utils"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { useSearchParams } from "next/navigation"
 
 const initialTransactions = [
   {
@@ -114,22 +113,13 @@ const paymentMethods = [
 ]
 
 export default function FundsPage() {
-  const searchParams = useSearchParams()
-  const tabFromQuery = searchParams.get("tab")
-  const fromQuery = searchParams.get("from")
-
-  const initialTab = useMemo(
-    () => (tabFromQuery === "deposit" || tabFromQuery === "withdraw" || tabFromQuery === "transfer" ? tabFromQuery : "deposit"),
-    [tabFromQuery]
-  )
-
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [transferAmount, setTransferAmount] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
-  const [activeTab, setActiveTab] = useState(initialTab)
+  const [activeTab, setActiveTab] = useState("deposit")
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("bank")
-  const [transferFromAccount, setTransferFromAccount] = useState(fromQuery || "mt5-12345")
+  const [transferFromAccount, setTransferFromAccount] = useState("mt5-12345")
   const [transferToAccount, setTransferToAccount] = useState("mt5-12346")
   const [transactions, setTransactions] = useState(initialTransactions)
 
@@ -151,15 +141,18 @@ export default function FundsPage() {
   }, [transactions])
 
   useEffect(() => {
-    setActiveTab(initialTab)
-  }, [initialTab])
+    const params = new URLSearchParams(window.location.search)
+    const tabFromQuery = params.get("tab")
+    const fromQuery = params.get("from")
 
-  useEffect(() => {
+    if (tabFromQuery === "deposit" || tabFromQuery === "withdraw" || tabFromQuery === "transfer") {
+      setActiveTab(tabFromQuery)
+    }
     if (fromQuery) {
       setTransferFromAccount(fromQuery.toLowerCase())
       setActiveTab("transfer")
     }
-  }, [fromQuery])
+  }, [])
 
   const handleDeposit = () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) {

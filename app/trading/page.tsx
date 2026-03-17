@@ -24,7 +24,6 @@ import { TrendingUp, TrendingDown, X, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import {
   LineChart,
   Line,
@@ -36,6 +35,8 @@ import {
   AreaChart,
   Area,
 } from "recharts"
+
+export const dynamic = "force-dynamic"
 
 const initialOpenPositions = [
   {
@@ -209,12 +210,16 @@ const pnlData = [
 const TRADING_STATE_STORAGE_KEY = "forexpro-trading-state"
 
 export default function TradingPage() {
-  const searchParams = useSearchParams()
-  const symbolFilter = searchParams.get("symbol")
+  const [symbolFilter, setSymbolFilter] = useState<string | null>(null)
   const [openPositions, setOpenPositions] = useState(initialOpenPositions)
   const [pendingOrders, setPendingOrders] = useState(initialPendingOrders)
   const [accountFilter, setAccountFilter] = useState("all")
   const [showWinnersOnly, setShowWinnersOnly] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setSymbolFilter(params.get("symbol"))
+  }, [])
 
   useEffect(() => {
     const stored = localStorage.getItem(TRADING_STATE_STORAGE_KEY)

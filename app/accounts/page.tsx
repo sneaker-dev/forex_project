@@ -26,7 +26,7 @@ import { Plus, Settings, ArrowUpDown, Eye, EyeOff, Copy, Check } from "lucide-re
 import { cn } from "@/lib/utils"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 const initialAccounts = [
   {
@@ -88,8 +88,8 @@ export default function AccountsPage() {
   const [leverage, setLeverage] = useState("100")
   const [currency, setCurrency] = useState("usd")
   const [accounts, setAccounts] = useState(initialAccounts)
+  const [newAccountRequested, setNewAccountRequested] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     const stored = localStorage.getItem(ACCOUNTS_STORAGE_KEY)
@@ -109,10 +109,13 @@ export default function AccountsPage() {
   }, [accounts])
 
   useEffect(() => {
-    if (searchParams.get("new") === "true") {
+    const params = new URLSearchParams(window.location.search)
+    const isNew = params.get("new") === "true"
+    setNewAccountRequested(isNew)
+    if (isNew) {
       setDialogOpen(true)
     }
-  }, [searchParams])
+  }, [])
 
   const totalBalance = useMemo(() => {
     const sum = accounts.reduce((acc, account) => {
@@ -163,7 +166,7 @@ export default function AccountsPage() {
       setAccountType("standard")
       setLeverage("100")
       setCurrency("usd")
-      if (searchParams.get("new") === "true") {
+      if (newAccountRequested) {
         router.replace("/accounts")
       }
       toast.success('Account Created!', { description: 'Your new trading account is ready' })
