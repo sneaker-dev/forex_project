@@ -4,7 +4,8 @@ import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 
 // User-selected theme backgrounds from /public
-const DASHBOARD_BG = "url('/istockphoto-1369016721-612x612.jpg')"
+const DARK_BG = "url('/istockphoto-1369016721-612x612.jpg')"
+const LIGHT_BG = "url('/360_F_298846909_mssb9MpliUGU22kW0r0i7dMjPwdGMkZy.jpg')"
 
 export function BackgroundProvider() {
   const { resolvedTheme } = useTheme()
@@ -36,7 +37,7 @@ export function BackgroundProvider() {
         position: "fixed",
         inset: 0,
         zIndex: 0,
-        backgroundImage: DASHBOARD_BG,
+        backgroundImage: isDark ? DARK_BG : LIGHT_BG,
         backgroundSize: "cover",
         backgroundPosition: "center center",
         backgroundRepeat: "no-repeat",

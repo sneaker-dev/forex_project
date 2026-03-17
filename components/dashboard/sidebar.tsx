@@ -67,7 +67,7 @@ export function DashboardSidebar({ collapsed, onCollapsedChange, isMobile = fals
       style={{
         backgroundImage: isDark
           ? "url('/istockphoto-1369016721-612x612.jpg')"
-          : "url('/istockphoto-1369016721-612x612.jpg')",
+          : "url('/360_F_298846909_mssb9MpliUGU22kW0r0i7dMjPwdGMkZy.jpg')",
         backgroundSize: 'cover',
         backgroundPosition: 'left center',
         backgroundRepeat: 'no-repeat',
