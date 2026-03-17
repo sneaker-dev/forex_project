@@ -23,15 +23,13 @@ import {
   ChevronRight,
   Sparkles,
   BadgeDollarSign,
-  Wallet,
   LifeBuoy,
 } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard",        href: "/",            icon: LayoutDashboard },
   { name: "Trading Accounts", href: "/accounts",    icon: CandlestickChart },
-  { name: "Funds",            href: "/funds",       icon: BadgeDollarSign },
-  { name: "Wallet",           href: "/wallet",      icon: Wallet },
+  { name: "FUNDS AND WALLET", href: "/funds",       icon: BadgeDollarSign },
   { name: "Trading Activity", href: "/trading",     icon: BarChart2 },
   { name: "Web Trader",       href: "/web-trader",  icon: Globe2 },
   { name: "Analytics",        href: "/analytics",   icon: Newspaper },

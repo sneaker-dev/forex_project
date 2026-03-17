@@ -50,6 +50,14 @@ const toolNames = ["Add", "Move", "Bars", "Circle", "Text", "Emoji", "Ruler", "Z
 const defaultLeverage = 2000
 const maxLeverage = 12000
 const STRESS_COLOR = "#EC3606"
+const mt5NewsFeed = [
+  "Weekly Report: what happened at XAUUSD last week (0309-0313)?",
+  "Weekly Report: what happened at XAUUSD last week (0302-0306)?",
+  "Weekly Report: what happened at XAUUSD last week (0223-0227)?",
+  "Weekly Report: what happened at XAUUSD last week (0216-0220)?",
+  "Weekly Report: what happened at XAUUSD last week (0209-0213)?",
+  "Weekly Report: what happened at XAUUSD last week (0202-0206)?",
+]
 const chartMargins = { top: 14, right: 62, bottom: 28, left: 12 }
 const chartWidth = 860
 const chartHeight = 430
@@ -140,6 +148,11 @@ export default function WebTraderPage() {
   const symbols = useMemo(() => Object.keys(state.quotes), [state.quotes])
   const selectedQuote = state.quotes[selectedSymbol] ?? Object.values(state.quotes)[0]
   const decimals = priceDecimals(selectedQuote?.symbol)
+  const quoteLast = selectedQuote?.last ?? 0
+  const quoteOpen = selectedQuote?.open ?? quoteLast
+  const quoteHigh = selectedQuote?.high ?? quoteLast
+  const quoteLow = selectedQuote?.low ?? quoteLast
+  const quoteSpread = selectedQuote?.spread ?? 0
   const visibleWatchlist = useMemo(() => {
     return state.watchlist
       .filter((symbol) => symbol.toLowerCase().includes(search.toLowerCase()))
@@ -395,6 +408,22 @@ export default function WebTraderPage() {
     toast.success("Order accepted", { description: result.message })
   }
 
+  const placeOneClickOrder = (side: OrderSide) => {
+    const result = actions.placeOrder({
+      symbol: selectedSymbol,
+      side,
+      type: "market",
+      volume: Number(volume || "0"),
+      stopLoss: stopLoss ? Number(stopLoss) : undefined,
+      takeProfit: takeProfit ? Number(takeProfit) : undefined,
+    })
+    if (!result.ok) {
+      toast.error("One-click order rejected", { description: result.message })
+      return
+    }
+    toast.success(`${side.toUpperCase()} executed`, { description: result.message })
+  }
+
   const startEdit = (order: PendingOrder) => {
     setEditOrderId(order.id)
     setEditVolume(String(order.volume))
@@ -427,7 +456,7 @@ export default function WebTraderPage() {
   return (
     <DashboardShell>
       <div className="space-y-4 min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="hidden flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Web Trader</h1>
             <p className="text-muted-foreground">Professional trading terminal with chart tools, advanced orders, and real-time simulation.</p>
@@ -445,60 +474,37 @@ export default function WebTraderPage() {
           )}
         >
 
-          <div className={cn("relative border-b px-3 py-2 sm:px-4 sm:py-3", isDark ? "border-[#1b2a46]" : "border-slate-200")}>
+          <div className={cn("relative border-b px-3 py-2", isDark ? "border-[#1b2a46]" : "border-slate-200")}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const currentIndex = symbols.indexOf(selectedSymbol)
-                    const nextSymbol = symbols[(currentIndex + 1) % symbols.length]
-                    setSelectedSymbol(nextSymbol)
-                    toast.info(`Symbol switched to ${nextSymbol}`)
-                  }}
-                >
-                  <Badge variant="secondary" className={cn("gap-1.5 border cursor-pointer", isDark ? "bg-[#0c1b38] border-[#243a63] text-slate-100 hover:bg-[#11284f]" : "bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200")}>
-                    <CandlestickChart className="h-3.5 w-3.5" />
-                    {selectedQuote?.symbol}
-                  </Badge>
-                </button>
-                <button type="button" onClick={() => router.push("/wallet")}>
-                  <Badge variant="outline" className={cn("bg-transparent cursor-pointer", isDark ? "border-[#2b3d62] text-slate-200 hover:bg-[#11284f]" : "border-slate-300 text-slate-700 hover:bg-slate-100")}>Balance ${state.balance.toFixed(2)}</Badge>
-                </button>
+                <Badge variant="secondary" className={cn("gap-1.5 border", isDark ? "bg-[#0c1b38] border-[#243a63] text-slate-100" : "bg-slate-100 border-slate-300 text-slate-800")}>
+                  <CandlestickChart className="h-3.5 w-3.5" />
+                  {selectedQuote?.symbol}
+                </Badge>
+                <Badge variant="outline" className={cn("bg-transparent", isDark ? "border-[#2b3d62] text-slate-200" : "border-slate-300 text-slate-700")}>
+                  Balance ${state.balance.toFixed(2)}
+                </Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn("h-8 gap-1 bg-transparent", isDark ? "border-[#2b3d62] text-slate-200 hover:bg-[#0b1831]" : "border-slate-300 text-slate-700 hover:bg-slate-100")}
-                  onClick={() => {
-                    const next = !indicatorsEnabled
-                    setIndicatorsEnabled(next)
-                    toast.info(next ? "Indicators enabled" : "Indicators hidden")
-                  }}
-                >
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  {indicatorsEnabled ? "Indicators On" : "Indicators Off"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn("h-8 gap-1 bg-transparent", isDark ? "border-[#2b3d62] text-slate-200 hover:bg-[#0b1831]" : "border-slate-300 text-slate-700 hover:bg-slate-100")}
-                  onClick={() => {
-                    const next = !oneClickEnabled
-                    setOneClickEnabled(next)
-                    toast.info(next ? "One-click trading enabled" : "One-click trading disabled")
-                  }}
-                >
-                  <ArrowLeftRight className="h-3.5 w-3.5" />
-                  {oneClickEnabled ? "One Click On" : "One Click Off"}
-                </Button>
+              <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                {["30s", "1m", "2m", "3m", "5m", "10m", "15m", "30m", "1h", "2h", "4h"].map((tf) => (
+                  <button
+                    key={tf}
+                    type="button"
+                    className={cn(
+                      "rounded px-1.5 py-0.5 transition-colors",
+                      timeframe === tf ? "text-cyan-300" : isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-700"
+                    )}
+                    onClick={() => setTimeframe(tf)}
+                  >
+                    {tf}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="relative grid min-w-0 xl:grid-cols-[56px_240px_minmax(0,1fr)_320px] lg:grid-cols-[240px_minmax(0,1fr)]">
-            <div className={cn("hidden xl:flex flex-col gap-2 border-r p-2", isDark ? "border-[#1b2a46] bg-[#050b19]" : "border-slate-200 bg-slate-50")}>
+          <div className="relative grid min-w-0 xl:grid-cols-[260px_minmax(0,1fr)_330px] lg:grid-cols-[230px_minmax(0,1fr)]">
+            <div className={cn("hidden flex-col gap-2 border-r p-2", isDark ? "border-[#1b2a46] bg-[#050b19]" : "border-slate-200 bg-slate-50")}>
               {toolIcons.map((Icon, idx) => (
                 <button
                   key={idx}
@@ -552,7 +558,12 @@ export default function WebTraderPage() {
               ))}
             </div>
 
-            <div className={cn("border-r p-3 space-y-3 min-w-0", isDark ? "border-[#1b2a46] bg-[#061127]" : "border-slate-200 bg-slate-50/60")}>
+            <div className={cn("border-r p-0 min-w-0", isDark ? "border-[#1b2a46] bg-[#f0f3f9]/[0.02]" : "border-slate-200 bg-[#f8fafc]")}>
+              <div className={cn("grid grid-cols-[1.1fr_.9fr] px-2 py-1 text-[11px] font-medium", isDark ? "text-slate-400 border-b border-[#1b2a46]" : "text-slate-500 border-b border-slate-200")}>
+                <span>Name</span>
+                <span className="text-right">Price/Change %</span>
+              </div>
+              <div className="max-h-[640px] overflow-y-auto p-1">
               <div className="relative">
                 <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4", isDark ? "text-slate-500" : "text-slate-400")} />
                 <Input
@@ -567,7 +578,7 @@ export default function WebTraderPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <Tabs defaultValue="forex" className="space-y-2">
+              <Tabs defaultValue="forex" className="space-y-1">
                 <TabsList className={cn("grid w-full grid-cols-3 border", isDark ? "bg-[#0a1730] border-[#213657]" : "bg-slate-100 border-slate-300")}>
                   <TabsTrigger value="forex">Forex</TabsTrigger>
                   <TabsTrigger value="metals">Metals</TabsTrigger>
@@ -579,7 +590,7 @@ export default function WebTraderPage() {
                       key={pair.symbol}
                       onClick={() => setSelectedSymbol(pair.symbol)}
                       className={cn(
-                        "w-full rounded-lg border p-3 text-left transition-colors",
+                        "w-full rounded-md border px-2 py-1.5 text-left transition-colors",
                         selectedSymbol === pair.symbol
                           ? isDark
                             ? "border-emerald-500/80 bg-[#0c1c3d]"
@@ -590,19 +601,23 @@ export default function WebTraderPage() {
                       )}
                     >
                       <div className="flex items-center justify-between">
-                        <p className={cn("font-semibold", isDark ? "text-slate-100" : "text-slate-800")}>{pair.symbol}</p>
+                        <p className={cn("font-semibold text-[12px]", isDark ? "text-slate-100" : "text-slate-800")}>{pair.symbol}</p>
                         <p className={cn("text-xs", pair.changePercent >= 0 ? "text-green-600 dark:text-green-400" : "")} style={pair.changePercent >= 0 ? undefined : { color: STRESS_COLOR }}>
                           {pair.changePercent >= 0 ? "+" : ""}
                           {pair.changePercent.toFixed(2)}%
                         </p>
                       </div>
-                      <p className={cn("text-xs mt-1", isDark ? "text-slate-400" : "text-slate-500")}>Bid {pair.bid} / Ask {pair.ask}</p>
+                      <div className="mt-0.5 flex items-center justify-between">
+                        <p className={cn("text-[10px]", isDark ? "text-slate-500" : "text-slate-500")}>Bid {pair.bid}</p>
+                        <p className={cn("text-[10px]", isDark ? "text-slate-400" : "text-slate-600")}>{pair.ask}</p>
+                      </div>
                     </button>
                   ))}
                 </TabsContent>
                 <TabsContent value="metals" className={cn("text-sm py-4", isDark ? "text-slate-400" : "text-slate-600")}>XAUUSD, XAGUSD live metals feed ready.</TabsContent>
                 <TabsContent value="crypto" className={cn("text-sm py-4", isDark ? "text-slate-400" : "text-slate-600")}>BTCUSD, ETHUSD live crypto feed ready.</TabsContent>
               </Tabs>
+            </div>
             </div>
 
             <div className={cn("border-r min-w-0", isDark ? "border-[#1b2a46] bg-[#040b19]" : "border-slate-200 bg-white")}>
@@ -678,7 +693,7 @@ export default function WebTraderPage() {
                 </div>
               )}
 
-              <div className="h-[420px] sm:h-[520px] px-3 pt-2 pb-3">
+              <div className="h-[380px] sm:h-[420px] px-2 pt-1 pb-1">
                 <div
                   ref={chartContainerRef}
                   onWheel={handleChartWheel}
@@ -852,26 +867,131 @@ export default function WebTraderPage() {
                   </div>
                   <div className={cn("absolute right-2 bottom-2 text-[11px]", isDark ? "text-slate-400" : "text-slate-600")}>06:38:57 UTC</div>
                   <div className={cn("absolute right-2 top-2 rounded px-2 py-1 text-[11px]", isDark ? "bg-[#102248] text-slate-200" : "bg-slate-200 text-slate-700")}>
-                    {selectedQuote?.last.toFixed(decimals)}
+                    {quoteLast.toFixed(decimals)}
                   </div>
                 </div>
               </div>
-              <div className={cn("px-4 py-2.5 border-t flex items-center justify-between text-xs", isDark ? "border-[#1b2a46] text-slate-400 bg-[#050b18]" : "border-slate-200 text-slate-600 bg-slate-50")}>
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-3.5 w-3.5" />
-                  <span>Indicators and drawing tools active</span>
+              <div className={cn("border-t", isDark ? "border-[#1b2a46] bg-[#050b18]" : "border-slate-200 bg-slate-50")}>
+                <div className={cn("grid grid-cols-[1fr_auto] px-3 py-1.5 text-[11px] font-medium", isDark ? "text-slate-300 border-b border-[#1b2a46]" : "text-slate-600 border-b border-slate-200")}>
+                  <span>News</span>
+                  <span>{new Date().toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="inline-flex items-center gap-1 text-emerald-400"><TrendingUp className="h-3.5 w-3.5" /> Bullish</span>
-                  <span className="inline-flex items-center gap-1" style={{ color: STRESS_COLOR }}><TrendingDown className="h-3.5 w-3.5" /> Volatility</span>
-                  <span className={cn("inline-flex items-center gap-1", isDark ? "text-slate-500" : "text-slate-600")}>Active Tool: {toolNames[selectedTool]}</span>
+                <div className="max-h-[188px] overflow-y-auto">
+                  {mt5NewsFeed.map((headline, idx) => (
+                    <div
+                      key={headline}
+                      className={cn(
+                        "grid grid-cols-[1fr_auto] gap-3 px-3 py-1.5 text-[11px]",
+                        isDark ? "border-b border-[#132744] text-slate-300" : "border-b border-slate-200 text-slate-600"
+                      )}
+                    >
+                      <span className="truncate">{headline}</span>
+                      <span className={cn(isDark ? "text-slate-500" : "text-slate-500")}>{`03/${String(idx + 2).padStart(2, "0")} 15:44`}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
             <div className={cn("p-4 space-y-4 border-t lg:border-t-0 xl:border-t-0", isDark ? "border-[#1b2a46] bg-[#070f21]" : "border-slate-200 bg-white")}>
+              <div className={cn("rounded-lg border p-3", isDark ? "border-[#213b62] bg-[#0a1428]" : "border-slate-300 bg-slate-50")}>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className={cn("text-[11px] uppercase", isDark ? "text-slate-400" : "text-slate-500")}>Quote</p>
+                    <p className={cn("text-[11px]", isDark ? "text-slate-400" : "text-slate-500")}>{selectedQuote?.symbol} FX</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => router.push("/funds")}>
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="mt-2 flex items-end justify-between">
+                  <p className="text-[38px] font-semibold leading-none" style={{ color: STRESS_COLOR }}>
+                    {selectedQuote?.last.toFixed(decimals)}
+                  </p>
+                  <p className={cn("text-[11px]", (selectedQuote?.changePercent ?? 0) >= 0 ? "text-emerald-400" : "")} style={(selectedQuote?.changePercent ?? 0) >= 0 ? undefined : { color: STRESS_COLOR }}>
+                    {(selectedQuote?.changePercent ?? 0) >= 0 ? "+" : ""}
+                    {(selectedQuote?.changePercent ?? 0).toFixed(2)}%
+                  </p>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                  <div className={cn("rounded border px-2 py-1", isDark ? "border-[#27466f] text-slate-300" : "border-slate-300 text-slate-600")}>Open {quoteOpen.toFixed(decimals)}</div>
+                  <div className={cn("rounded border px-2 py-1", isDark ? "border-[#27466f] text-slate-300" : "border-slate-300 text-slate-600")}>High {quoteHigh.toFixed(decimals)}</div>
+                  <div className={cn("rounded border px-2 py-1", isDark ? "border-[#27466f] text-slate-300" : "border-slate-300 text-slate-600")}>Low {quoteLow.toFixed(decimals)}</div>
+                  <div className={cn("rounded border px-2 py-1", isDark ? "border-[#27466f] text-slate-300" : "border-slate-300 text-slate-600")}>Spread {quoteSpread.toFixed(decimals)}</div>
+                </div>
+                <div className="mt-3 rounded-md border border-[#2b4368] p-2">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className={cn("text-xs font-medium", isDark ? "text-slate-200" : "text-slate-700")}>One-Click Trading</p>
+                    <Switch checked={oneClickEnabled} onCheckedChange={setOneClickEnabled} />
+                  </div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <Label className={cn("text-[11px]", isDark ? "text-slate-400" : "text-slate-600")}>Volume</Label>
+                    <Input type="number" value={volume} onChange={(e) => setVolume(e.target.value)} className={cn("h-7 text-xs", isDark ? "bg-[#0b1730] border-[#2b436d] text-slate-100" : "bg-white border-slate-300 text-slate-800")} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button className="h-8 bg-blue-600 hover:bg-blue-700" disabled={!oneClickEnabled} onClick={() => placeOneClickOrder("buy")}>BUY</Button>
+                    <Button className="h-8 bg-red-600 hover:bg-red-700" disabled={!oneClickEnabled} onClick={() => placeOneClickOrder("sell")}>SELL</Button>
+                  </div>
+                </div>
+              </div>
+
+              <Tabs defaultValue="positions" className="space-y-2">
+                <TabsList className={cn("grid w-full grid-cols-2 border", isDark ? "bg-[#0b1730] border-[#223a61]" : "bg-slate-100 border-slate-300")}>
+                  <TabsTrigger value="positions">Positions</TabsTrigger>
+                  <TabsTrigger value="orders">Orders</TabsTrigger>
+                </TabsList>
+                <TabsContent value="positions" className="space-y-2">
+                  <div className={cn("rounded-lg border p-2 text-xs", isDark ? "border-[#223e65] bg-[#08132a]" : "border-slate-300 bg-slate-50")}>
+                    {state.positions.length === 0 ? (
+                      <p className={cn(isDark ? "text-slate-400" : "text-slate-600")}>Please login to view positions</p>
+                    ) : (
+                      state.positions.slice(0, 4).map((position) => (
+                        <div key={position.id} className="mb-1 flex items-center justify-between rounded border border-transparent px-1.5 py-1">
+                          <span className={cn("font-medium", isDark ? "text-slate-200" : "text-slate-700")}>{position.symbol}</span>
+                          <span className={position.unrealizedPnl >= 0 ? "text-emerald-400" : "text-red-400"}>
+                            {position.unrealizedPnl >= 0 ? "+" : ""}${position.unrealizedPnl.toFixed(2)}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="orders" className="space-y-2">
+                  <div className={cn("rounded-lg border p-2 text-xs", isDark ? "border-[#223e65] bg-[#08132a]" : "border-slate-300 bg-slate-50")}>
+                    {state.pendingOrders.length === 0 ? (
+                      <p className={cn(isDark ? "text-slate-400" : "text-slate-600")}>No pending orders</p>
+                    ) : (
+                      state.pendingOrders.slice(0, 4).map((order) => (
+                        <div key={order.id} className="mb-1 flex items-center justify-between rounded border border-transparent px-1.5 py-1">
+                          <span className={cn("font-medium", isDark ? "text-slate-200" : "text-slate-700")}>{order.symbol} {order.type}</span>
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => actions.cancelPendingOrder(order.id)}>Cancel</Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <div className={cn("rounded-lg border p-2", isDark ? "border-[#223e65] bg-[#08132a]" : "border-slate-300 bg-slate-50")}>
+                <p className={cn("mb-1 text-xs font-medium", isDark ? "text-slate-300" : "text-slate-600")}>Quick Chart</p>
+                <svg viewBox="0 0 280 92" className="h-[88px] w-full">
+                  <polyline
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="2"
+                    points={visibleSeries.slice(Math.max(0, visibleSeries.length - 28)).map((item, idx, arr) => {
+                      const x = (idx / Math.max(arr.length - 1, 1)) * 280
+                      const localMin = Math.min(...arr.map((p) => p.low))
+                      const localMax = Math.max(...arr.map((p) => p.high))
+                      const y = 84 - ((item.close - localMin) / Math.max(localMax - localMin, 0.00001)) * 72
+                      return `${x},${y}`
+                    }).join(" ")}
+                  />
+                </svg>
+              </div>
+
               <Tabs defaultValue="order" className="space-y-3">
-                <TabsList className={cn("grid w-full grid-cols-3 border", isDark ? "bg-[#0b1730] border-[#223a61]" : "bg-slate-100 border-slate-300")}>
+                <TabsList className="hidden">
                   <TabsTrigger value="order">Order</TabsTrigger>
                   <TabsTrigger value="risk">Risk</TabsTrigger>
                   <TabsTrigger value="alerts">Alerts</TabsTrigger>
@@ -1134,7 +1254,7 @@ export default function WebTraderPage() {
             </div>
           </div>
 
-          <div className={cn("border-t p-4", isDark ? "border-[#1b2a46] bg-[#050d1d]" : "border-slate-200 bg-slate-50")}>
+          <div className={cn("hidden border-t p-4", isDark ? "border-[#1b2a46] bg-[#050d1d]" : "border-slate-200 bg-slate-50")}>
             <Tabs defaultValue="positions" className="space-y-3">
               <TabsList className={cn("grid w-full max-w-md grid-cols-3 border", isDark ? "bg-[#0a1832] border-[#21395f]" : "bg-white border-slate-300")}>
                 <TabsTrigger value="positions">Positions</TabsTrigger>
@@ -1276,7 +1396,7 @@ export default function WebTraderPage() {
             </Tabs>
           </div>
 
-          <div className={cn("border-t px-4 py-3 text-xs flex flex-wrap gap-4", isDark ? "border-[#1b2a46] text-slate-300 bg-[#050a16]" : "border-slate-200 text-slate-600 bg-slate-100")}>
+          <div className={cn("hidden border-t px-4 py-3 text-xs flex-wrap gap-4", isDark ? "border-[#1b2a46] text-slate-300 bg-[#050a16]" : "border-slate-200 text-slate-600 bg-slate-100")}>
             <span>Balance: ${state.balance.toFixed(2)}</span>
             <span>Equity: ${metrics.equity.toFixed(2)}</span>
             <span>Open P/L: {metrics.openPnl >= 0 ? "+" : ""}${metrics.openPnl.toFixed(2)}</span>

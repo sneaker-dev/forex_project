@@ -22,12 +22,16 @@ import {
   Medal,
   TrendingUp,
   Calendar,
+  ChevronLeft,
   ChevronRight,
   Crown,
   Flame,
+  Award,
+  Coins,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 const initialCompetitions = [
@@ -115,9 +119,14 @@ const COMPETITIONS_STORAGE_KEY = "forexpro-competitions-state"
 
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState(initialCompetitions)
+  const [podiumOffset, setPodiumOffset] = useState(0)
   const activeCompetition = competitions.find((c) => c.status === "active" && c.joined)
   const daysRemaining = 2 // Simplified for demo
   const joinedCount = competitions.filter((c) => c.joined).length
+  const rotatedPodium = useMemo(
+    () => podium.map((_, idx) => podium[(idx + podiumOffset) % podium.length]),
+    [podiumOffset]
+  )
 
   useEffect(() => {
     const stored = localStorage.getItem(COMPETITIONS_STORAGE_KEY)
@@ -260,37 +269,117 @@ export default function CompetitionsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6 p-4 sm:p-6">
-            <div className="grid gap-4 md:grid-cols-3 md:items-end">
-              {podium.map((item, idx) => {
-                const center = idx === 1
-                return (
-                  <div
-                    key={item.rank}
-                    className={cn(
-                      "rounded-2xl border p-4 text-center bg-[linear-gradient(180deg,rgba(42,120,236,0.24),rgba(7,17,38,0.92))]",
-                      center ? "border-cyan-300/70 md:scale-105" : "border-[#29466c]"
-                    )}
+            <div className="relative overflow-hidden rounded-2xl border border-[#244066] bg-[linear-gradient(180deg,rgba(12,28,54,0.95),rgba(7,16,34,1))] p-4 sm:p-5">
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute -left-12 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-cyan-500/15 blur-3xl" />
+                <div className="absolute -right-12 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-blue-500/15 blur-3xl" />
+                <div className="absolute left-1/2 top-0 h-28 w-72 -translate-x-1/2 rounded-full bg-amber-300/10 blur-3xl" />
+              </div>
+              <div className="relative mb-3 flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Elite Podium</p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full border border-[#2b4a75] bg-[#0e2242] text-cyan-100 hover:bg-[#16325b]"
+                    onClick={() => setPodiumOffset((prev) => (prev - 1 + podium.length) % podium.length)}
                   >
-                    <Avatar className={cn("mx-auto mb-2", center ? "h-16 w-16" : "h-14 w-14")}>
-                      <AvatarImage src={podiumAvatars[item.rank]} alt={item.name} />
-                      <AvatarFallback className={cn("font-semibold", center ? "bg-cyan-300/25 text-cyan-100" : "bg-[#1a3358] text-cyan-100")}>
-                        {item.name.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm text-slate-100">{item.name}</p>
-                    <div className="mx-auto mt-2 w-fit rounded-md border border-[#355b8f] bg-[#11274b] px-2 py-1 text-xs text-cyan-100">
-                      #{item.rank} Rank
-                    </div>
-                    <p className="mt-2 text-lg font-semibold text-slate-100">{item.points.toLocaleString()}</p>
-                    <p className="text-xs text-slate-300/75">AP points</p>
-                    {center && (
-                      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-cyan-300/15 px-2 py-1 text-[11px] text-cyan-200">
-                        <Crown className="h-3 w-3" /> Leader
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full border border-[#2b4a75] bg-[#0e2242] text-cyan-100 hover:bg-[#16325b]"
+                    onClick={() => setPodiumOffset((prev) => (prev + 1) % podium.length)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3 md:items-end">
+                {rotatedPodium.map((item, idx) => {
+                  const center = idx === 1
+                  const badgeTone =
+                    item.rank === 1
+                      ? {
+                          wingOuter: "from-[#ffd73f] to-[#e99a10] border-[#ffdd63]",
+                          wingInner: "from-[#ffe05b] to-[#f6ae12] border-[#ffd66a]",
+                          coreOuter: "from-[#ffcf38] via-[#f3a018] to-[#da790f] border-[#ffd86e]",
+                          coreInner: "from-[#ffd84a] to-[#ea9916] border-[#ffcd55]",
+                          label: "text-[#f2a120]",
+                          icon: "text-[#8f4e00]",
+                          title: "GOLD",
+                        }
+                      : item.rank === 2
+                      ? {
+                          wingOuter: "from-[#cfd5e8] to-[#8893b8] border-[#d9def0]",
+                          wingInner: "from-[#e5e9f7] to-[#9aa5ca] border-[#e9edfb]",
+                          coreOuter: "from-[#d7dced] via-[#a6b0cf] to-[#7e87a8] border-[#dde3f6]",
+                          coreInner: "from-[#eaedf8] to-[#a6afcf] border-[#f0f3ff]",
+                          label: "text-[#98a2b9]",
+                          icon: "text-[#616b88]",
+                          title: "SILVER",
+                        }
+                      : {
+                          wingOuter: "from-[#be5f2e] to-[#6b2f13] border-[#d0885e]",
+                          wingInner: "from-[#d57b4b] to-[#8a3c1a] border-[#df9066]",
+                          coreOuter: "from-[#c76637] via-[#9a4824] to-[#6e3218] border-[#d88f68]",
+                          coreInner: "from-[#d98357] to-[#9e4f2a] border-[#e5a07b]",
+                          label: "text-[#d07f5e]",
+                          icon: "text-[#5c240f]",
+                          title: "BRONZE",
+                        }
+                  return (
+                    <div
+                      key={`${item.rank}-${idx}`}
+                      className={cn(
+                        "group relative min-h-[300px] overflow-hidden rounded-2xl border px-4 pb-6 pt-5 text-center transition-all duration-500",
+                        "bg-[linear-gradient(180deg,rgba(33,77,138,0.24),rgba(11,25,47,0.96))]",
+                        center ? "border-cyan-300/70 md:scale-105 shadow-[0_0_36px_rgba(34,211,238,0.18)]" : "border-[#29466c]"
+                      )}
+                    >
+                      <div className="absolute bottom-8 left-1/2 h-[106px] w-[88%] -translate-x-1/2 rounded-t-xl border border-[#2f4c70] bg-[linear-gradient(180deg,rgba(24,52,92,0.7),rgba(10,23,44,0.95))]">
+                        <div className="flex h-full flex-col items-center justify-start px-3 pt-5">
+                          <p className="text-sm font-semibold text-slate-100">{item.name}</p>
+                          <div className="mt-3 rounded-md border border-[#345a87] bg-[linear-gradient(180deg,rgba(19,42,75,0.98),rgba(9,24,46,0.98))] px-2 py-1 text-[12px] font-semibold text-amber-200 shadow-[0_8px_22px_rgba(4,10,24,0.55)]">
+                            <span className="inline-flex items-center gap-1">
+                              <Coins className="h-3.5 w-3.5 text-amber-300" />
+                              {item.rank === 1 ? "10k season reward" : item.rank === 2 ? "5k season reward" : "2.5k season reward"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                )
-              })}
+                      <div className="relative z-10">
+                        <div className="mt-0 flex items-center justify-center">
+                          <div className={cn("relative h-[168px] w-[276px]", center && "scale-105")}>
+                            <span className={cn("absolute left-[28px] top-[45px] h-[44px] w-[100px] -skew-x-[34deg] border bg-gradient-to-b", badgeTone.wingOuter)} />
+                            <span className={cn("absolute left-[50px] top-[66px] h-[28px] w-[68px] -skew-x-[20deg] border bg-gradient-to-b", badgeTone.wingInner)} />
+                            <span className={cn("absolute left-[22px] top-[87px] h-[24px] w-[86px] -skew-x-[14deg] border bg-gradient-to-b", badgeTone.wingOuter)} />
+                            <span className={cn("absolute right-[28px] top-[45px] h-[44px] w-[100px] skew-x-[34deg] border bg-gradient-to-b", badgeTone.wingOuter)} />
+                            <span className={cn("absolute right-[50px] top-[66px] h-[28px] w-[68px] skew-x-[20deg] border bg-gradient-to-b", badgeTone.wingInner)} />
+                            <span className={cn("absolute right-[22px] top-[87px] h-[24px] w-[86px] skew-x-[14deg] border bg-gradient-to-b", badgeTone.wingOuter)} />
+                            <span className={cn("absolute left-1/2 top-[31px] h-[94px] w-[112px] -translate-x-1/2 border bg-gradient-to-b shadow-[0_9px_22px_rgba(4,10,24,0.5)]", badgeTone.coreOuter)} style={{ clipPath: "polygon(50% 0,87% 16%,92% 45%,73% 84%,50% 100%,27% 84%,8% 45%,13% 16%)" }} />
+                            <span className={cn("absolute left-1/2 top-[44px] h-[62px] w-[78px] -translate-x-1/2 border bg-gradient-to-b", badgeTone.coreInner)} style={{ clipPath: "polygon(50% 0,87% 16%,92% 45%,73% 84%,50% 100%,27% 84%,8% 45%,13% 16%)" }} />
+                            <span className={cn("absolute left-1/2 top-[114px] h-[28px] w-[68px] -translate-x-1/2 border bg-gradient-to-b", badgeTone.coreOuter)} style={{ clipPath: "polygon(50% 100%,100% 36%,76% 0,24% 0,0 36%)" }} />
+                            <Avatar className="absolute left-1/2 top-[78px] h-16 w-16 -translate-x-1/2 -translate-y-1/2">
+                              <AvatarImage src={podiumAvatars[item.rank]} alt={item.name} />
+                              <AvatarFallback className="bg-[#1a3358] font-semibold text-cyan-100">
+                                {item.name.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="absolute left-1/2 top-[106px] inline-flex h-6 min-w-6 -translate-x-1/2 items-center justify-center rounded-full border border-[#3d6799] bg-[#10294e] px-1 text-[10px] font-semibold text-cyan-100">
+                              {item.rank}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-0 h-0" />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             <div className="rounded-xl border border-[#1e3555] bg-[#050b19] p-3">
@@ -340,7 +429,7 @@ export default function CompetitionsPage() {
 
         {/* Competition List */}
         <Tabs defaultValue="active" className="space-y-6">
-          <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsList className="sticky top-16 z-20 grid w-full grid-cols-3 border border-[#233f63] bg-[#0b1c37]/95 p-1 backdrop-blur-sm">
             <TabsTrigger value="active">Active ({competitions.filter((c) => c.status === "active").length})</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming ({competitions.filter((c) => c.status === "upcoming").length})</TabsTrigger>
             <TabsTrigger value="past">Past Results</TabsTrigger>

@@ -44,9 +44,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Upload,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
 const initialTransactions = [
@@ -211,6 +212,9 @@ export default function FundsPage() {
   const [depositAccount, setDepositAccount] = useState("mt5-12345")
   const [withdrawAccount, setWithdrawAccount] = useState("mt5-12345")
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("bank")
+  const [depositTransactionId, setDepositTransactionId] = useState("")
+  const [depositProofFileName, setDepositProofFileName] = useState<string | null>(null)
+  const [qrNonce, setQrNonce] = useState(1)
   const [withdrawMethod, setWithdrawMethod] = useState("bank")
   const [upiId, setUpiId] = useState("")
   const [withdrawUpiId, setWithdrawUpiId] = useState("")
@@ -226,6 +230,10 @@ export default function FundsPage() {
   const [selectedRecipientId, setSelectedRecipientId] = useState("")
   const [editingRecipientId, setEditingRecipientId] = useState<string | null>(null)
   const [pendingDeleteRecipientId, setPendingDeleteRecipientId] = useState<string | null>(null)
+  const depositProofInputRef = useRef<HTMLInputElement | null>(null)
+  const depositSectionRef = useRef<HTMLDivElement | null>(null)
+  const withdrawSectionRef = useRef<HTMLDivElement | null>(null)
+  const transferSectionRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem(FUNDS_TRANSACTIONS_STORAGE_KEY)
@@ -310,6 +318,14 @@ export default function FundsPage() {
       toast.error('UPI ID Required', { description: 'Please enter a valid UPI ID for deposit.' })
       return
     }
+    if (!depositTransactionId.trim()) {
+      toast.error('Transaction ID Required', { description: 'Please add payment transaction/reference ID.' })
+      return
+    }
+    if (!depositProofFileName) {
+      toast.error('Payment Proof Required', { description: 'Please upload a payment screenshot/image.' })
+      return
+    }
     setIsProcessing(true)
     setTimeout(() => {
       const paymentName = paymentMethods.find((method) => method.id === selectedPaymentMethod)?.name ?? "Bank Transfer"
@@ -322,13 +338,27 @@ export default function FundsPage() {
           status: "pending",
           date: new Date().toLocaleString(),
           account: depositAccount.toUpperCase(),
+          reference: depositTransactionId.trim(),
+          proofImage: depositProofFileName,
         },
         ...prev,
       ])
       setIsProcessing(false)
       toast.success('Deposit Initiated', { description: `$${depositAmount} deposit is being processed` })
       setDepositAmount('')
+      setDepositTransactionId("")
+      setDepositProofFileName(null)
     }, 1500)
+  }
+
+  const handleDepositProofUpload = (file: File | null) => {
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      toast.error("Invalid File", { description: "Please upload an image file for payment proof." })
+      return
+    }
+    setDepositProofFileName(file.name)
+    toast.success("Payment proof attached")
   }
 
   const handleWithdraw = () => {
@@ -529,18 +559,42 @@ export default function FundsPage() {
   }
 
   const pendingDeleteRecipient = savedRecipients.find((recipient) => recipient.id === pendingDeleteRecipientId)
+  const qrPayload = useMemo(() => {
+    const amount = Number(depositAmount || "0")
+    return [
+      "FOREXPRO_DEPOSIT",
+      `account=${depositAccount}`,
+      `method=${selectedPaymentMethod}`,
+      `amount=${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`,
+      `ref=${depositTransactionId || "pending"}`,
+      `nonce=${qrNonce}`,
+    ].join("|")
+  }, [depositAccount, selectedPaymentMethod, depositAmount, depositTransactionId, qrNonce])
+  const qrImageSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=${encodeURIComponent(qrPayload)}`
+  const openFlow = (tab: "deposit" | "withdraw" | "transfer", description: string) => {
+    setActiveTab(tab)
+    toast.info(description)
+    setTimeout(() => {
+      const target = tab === "deposit" ? depositSectionRef.current : tab === "withdraw" ? withdrawSectionRef.current : transferSectionRef.current
+      target?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 80)
+  }
+  const walletTransactions = useMemo(
+    () => transactions.filter((tx) => tx.account === "WALLET-USD" || tx.method.toLowerCase().includes("wallet")),
+    [transactions]
+  )
 
   return (
     <DashboardShell>
       <div className="space-y-6">
         {/* Page header */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Funds Management</h1>
-          <p className="text-muted-foreground">Deposit, withdraw, and transfer funds between accounts.</p>
+          <h1 className="text-2xl font-bold text-foreground">FUNDS AND WALLET</h1>
+          <p className="text-muted-foreground">Unified funds and wallet operations: deposit, withdraw, transfer, and wallet management.</p>
         </div>
 
         {/* Balance summary */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-card border-border">
             <CardContent className="pt-6">
               <p className="text-sm font-medium text-muted-foreground">Available Balance</p>
@@ -560,6 +614,13 @@ export default function FundsPage() {
               <p className="text-sm font-medium text-muted-foreground">This Month</p>
               <p className="text-3xl font-bold text-chart-1">+$8,200.00</p>
               <p className="text-sm text-muted-foreground mt-1">Net deposits</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="pt-6">
+              <p className="text-sm font-medium text-muted-foreground">Wallet Balance</p>
+              <p className="text-3xl font-bold text-foreground">$15,800.00</p>
+              <p className="text-sm text-chart-1 mt-1">Wallet ready for transfer</p>
             </CardContent>
           </Card>
         </div>
@@ -583,7 +644,7 @@ export default function FundsPage() {
 
           {/* Deposit Tab */}
           <TabsContent value="deposit" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div ref={depositSectionRef} className="grid gap-6 lg:grid-cols-2">
               <Card className="bg-card border-border">
                 <CardHeader>
                   <CardTitle>Deposit Funds</CardTitle>
@@ -665,11 +726,48 @@ export default function FundsPage() {
                     <div className="rounded-lg border border-border bg-card p-3 text-center">
                       <p className="text-sm font-medium text-foreground mb-3">Scan QR to Deposit</p>
                       <div className="mx-auto w-fit rounded-lg bg-white p-2">
-                        <img src="/placeholder.svg" alt="Payment QR" className="h-24 w-24" />
+                        <img src={qrImageSrc} alt="Payment QR" className="h-28 w-28" />
+                      </div>
+                      <div className="mt-2 flex justify-center">
+                        <Button type="button" size="sm" variant="outline" onClick={() => setQrNonce((prev) => prev + 1)}>
+                          Refresh QR
+                        </Button>
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">After scan and payment, click Continue to Payment to create the pending transaction.</p>
                     </div>
                   )}
+                  <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+                    <p className="text-sm font-medium text-foreground">Payment Details</p>
+                    <FieldGroup>
+                      <Field>
+                        <FieldLabel>Transaction ID / Reference Number</FieldLabel>
+                        <Input
+                          placeholder="Enter transaction ID (UTR / Ref No.)"
+                          value={depositTransactionId}
+                          onChange={(e) => setDepositTransactionId(e.target.value)}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel>Upload Payment Screenshot</FieldLabel>
+                        <div className="flex gap-2">
+                          <Button type="button" variant="outline" className="gap-2" onClick={() => depositProofInputRef.current?.click()}>
+                            <Upload className="h-4 w-4" />
+                            Upload Image
+                          </Button>
+                          <span className="text-xs text-muted-foreground self-center truncate">
+                            {depositProofFileName ?? "No file selected"}
+                          </span>
+                        </div>
+                        <input
+                          ref={depositProofInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleDepositProofUpload(e.target.files?.[0] ?? null)}
+                        />
+                      </Field>
+                    </FieldGroup>
+                  </div>
                   <div className="rounded-lg border border-border bg-card p-3">
                     <p className="text-sm font-medium text-foreground">Deposit Flow</p>
                     <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
@@ -686,7 +784,7 @@ export default function FundsPage() {
 
           {/* Withdraw Tab */}
           <TabsContent value="withdraw" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div ref={withdrawSectionRef} className="grid gap-6 lg:grid-cols-2">
               <Card className="bg-card border-border">
                 <CardHeader>
                   <CardTitle>Withdraw Funds</CardTitle>
@@ -815,6 +913,13 @@ export default function FundsPage() {
                       />
                     </Field>
                   </FieldGroup>
+                  <div className="flex gap-2">
+                    {["100", "500", "1000", "5000"].map((amount) => (
+                      <Button key={amount} type="button" variant="outline" size="sm" className="flex-1" onClick={() => handleQuickAmount(amount, 'withdraw')}>
+                        ${amount}
+                      </Button>
+                    ))}
+                  </div>
                   <Button type="button" variant="outline" className="w-full" onClick={saveCurrentRecipient}>
                     {editingRecipientId ? "Update Recipient Profile" : "Save Current Recipient Profile"}
                   </Button>
@@ -883,7 +988,7 @@ export default function FundsPage() {
 
           {/* Transfer Tab */}
           <TabsContent value="transfer" className="space-y-6">
-            <Card className="bg-card border-border max-w-xl">
+            <Card ref={transferSectionRef} className="bg-card border-border max-w-xl">
               <CardHeader>
                 <CardTitle>Internal Transfer</CardTitle>
                 <CardDescription>Transfer funds between your trading accounts</CardDescription>
@@ -935,6 +1040,13 @@ export default function FundsPage() {
                     <span className="text-muted-foreground">Processing</span>
                     <span className="font-medium text-foreground">Instant</span>
                   </div>
+                </div>
+                <div className="flex gap-2">
+                  {["100", "500", "1000", "5000"].map((amount) => (
+                    <Button key={amount} type="button" variant="outline" size="sm" className="flex-1" onClick={() => handleQuickAmount(amount, 'transfer')}>
+                      ${amount}
+                    </Button>
+                  ))}
                 </div>
                 <div className="rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">
                   Wallet option is available on both sides. You can transfer Wallet -&gt; Trading account or Trading account -&gt; Wallet instantly.
@@ -1004,6 +1116,79 @@ export default function FundsPage() {
             </div>
           </CardContent>
         </Card>
+        
+        <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-card border-border lg:col-span-2">
+                <CardContent className="pt-6">
+                  <p className="text-sm font-medium text-muted-foreground">Wallet Balance</p>
+                  <p className="text-4xl font-bold text-foreground">$15,800.00</p>
+                  <p className="text-sm text-chart-1 mt-1">+$1,240.00 this week</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border">
+                <CardContent className="pt-6">
+                  <p className="text-sm font-medium text-muted-foreground">Pending Wallet Settlements</p>
+                  <p className="text-3xl font-bold text-chart-4">$100.00</p>
+                  <p className="text-sm text-muted-foreground mt-1">1 pending transaction</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border">
+                <CardContent className="pt-6">
+                  <p className="text-sm font-medium text-muted-foreground">Internal Transfer</p>
+                  <p className="text-3xl font-bold text-chart-1">Instant</p>
+                  <p className="text-sm text-muted-foreground mt-1">No fees</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle>Wallet Quick Actions</CardTitle>
+                <CardDescription>Use wallet balance directly inside Funds</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-3">
+                <Button onClick={() => { setDepositAccount("wallet-usd"); openFlow("deposit", "Ready to deposit directly into Wallet.") }} className="gap-2">
+                  <ArrowDownToLine className="h-4 w-4" />
+                  Deposit to Wallet
+                </Button>
+                <Button variant="outline" onClick={() => { setWithdrawAccount("wallet-usd"); openFlow("withdraw", "Wallet withdrawal form opened.") }} className="gap-2">
+                  <ArrowUpFromLine className="h-4 w-4" />
+                  Withdraw from Wallet
+                </Button>
+                <Button variant="outline" onClick={() => { setTransferFromAccount("wallet-usd"); openFlow("transfer", "Wallet transfer form opened.") }} className="gap-2">
+                  <ArrowLeftRight className="h-4 w-4" />
+                  Wallet Internal Transfer
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle>Wallet Transaction History</CardTitle>
+                <CardDescription>Wallet-specific recent activity</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {walletTransactions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No wallet transactions yet.</p>
+                ) : (
+                  walletTransactions.map((tx) => (
+                    <div key={tx.id} className="rounded-lg border border-border p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{tx.type} • {tx.method}</p>
+                          <p className="text-xs text-muted-foreground">{tx.id} • {tx.date}</p>
+                        </div>
+                        <p className={cn("font-semibold", tx.amount.startsWith("+") ? "text-chart-1" : tx.amount.startsWith("-") ? "text-chart-2" : "text-foreground")}>
+                          {tx.amount}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+        </div>
 
         <AlertDialog open={Boolean(pendingDeleteRecipientId)} onOpenChange={(open) => !open && setPendingDeleteRecipientId(null)}>
           <AlertDialogContent>
