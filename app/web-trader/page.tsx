@@ -125,6 +125,7 @@ export default function WebTraderPage() {
   const [selectedTool, setSelectedTool] = useState(0)
   const [indicatorsEnabled, setIndicatorsEnabled] = useState(true)
   const [oneClickEnabled, setOneClickEnabled] = useState(false)
+  const [watchlistTab, setWatchlistTab] = useState<"watchlist" | "recent">("watchlist")
   const [showChartSettings, setShowChartSettings] = useState(false)
   const [showCrosshair, setShowCrosshair] = useState(true)
   const [showPriceLine, setShowPriceLine] = useState(true)
@@ -212,6 +213,12 @@ export default function WebTraderPage() {
     })
   }, [visibleSeries.length, zoomRange.start])
   const lastCandle = visibleSeries[visibleSeries.length - 1]
+  const lastOpen = lastCandle?.open ?? quoteOpen
+  const lastHigh = lastCandle?.high ?? quoteHigh
+  const lastLow = lastCandle?.low ?? quoteLow
+  const lastClose = lastCandle?.close ?? quoteLast
+  const quoteBid = selectedQuote?.bid ?? quoteLast
+  const quoteAsk = selectedQuote?.ask ?? quoteLast
   const currentLineY = toY(lastCandle?.close ?? selectedQuote?.last ?? 1.1)
   const chartTheme = isDark
     ? {
@@ -474,7 +481,7 @@ export default function WebTraderPage() {
           )}
         >
 
-          <div className={cn("relative border-b px-3 py-2", isDark ? "border-[#1b2a46]" : "border-slate-200")}>
+          <div className={cn("relative border-b px-2 py-1.5", isDark ? "border-[#1b2a46]" : "border-slate-200")}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className={cn("gap-1.5 border", isDark ? "bg-[#0c1b38] border-[#243a63] text-slate-100" : "bg-slate-100 border-slate-300 text-slate-800")}>
@@ -503,7 +510,7 @@ export default function WebTraderPage() {
             </div>
           </div>
 
-          <div className="relative grid min-w-0 xl:grid-cols-[260px_minmax(0,1fr)_330px] lg:grid-cols-[230px_minmax(0,1fr)]">
+          <div className="relative grid min-w-0 xl:grid-cols-[240px_minmax(0,1fr)_300px] lg:grid-cols-[220px_minmax(0,1fr)]">
             <div className={cn("hidden flex-col gap-2 border-r p-2", isDark ? "border-[#1b2a46] bg-[#050b19]" : "border-slate-200 bg-slate-50")}>
               {toolIcons.map((Icon, idx) => (
                 <button
@@ -564,6 +571,22 @@ export default function WebTraderPage() {
                 <span className="text-right">Price/Change %</span>
               </div>
               <div className="max-h-[640px] overflow-y-auto p-1">
+              <div className="mb-2 grid grid-cols-2 rounded border border-[#22395f] bg-[#091731] p-0.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setWatchlistTab("watchlist")}
+                  className={cn("rounded px-2 py-1", watchlistTab === "watchlist" ? "bg-[#12305d] text-cyan-200" : "text-slate-400")}
+                >
+                  Watchlists
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWatchlistTab("recent")}
+                  className={cn("rounded px-2 py-1", watchlistTab === "recent" ? "bg-[#12305d] text-cyan-200" : "text-slate-400")}
+                >
+                  Recently
+                </button>
+              </div>
               <div className="relative">
                 <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4", isDark ? "text-slate-500" : "text-slate-400")} />
                 <Input
@@ -578,6 +601,7 @@ export default function WebTraderPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+              {watchlistTab === "watchlist" && (
               <Tabs defaultValue="forex" className="space-y-1">
                 <TabsList className={cn("grid w-full grid-cols-3 border", isDark ? "bg-[#0a1730] border-[#213657]" : "bg-slate-100 border-slate-300")}>
                   <TabsTrigger value="forex">Forex</TabsTrigger>
@@ -617,6 +641,24 @@ export default function WebTraderPage() {
                 <TabsContent value="metals" className={cn("text-sm py-4", isDark ? "text-slate-400" : "text-slate-600")}>XAUUSD, XAGUSD live metals feed ready.</TabsContent>
                 <TabsContent value="crypto" className={cn("text-sm py-4", isDark ? "text-slate-400" : "text-slate-600")}>BTCUSD, ETHUSD live crypto feed ready.</TabsContent>
               </Tabs>
+              )}
+              {watchlistTab === "recent" && (
+                <div className="space-y-1 pt-2">
+                  {visibleWatchlist.slice(0, 5).map((pair) => (
+                    <button
+                      key={`recent-${pair.symbol}`}
+                      type="button"
+                      onClick={() => setSelectedSymbol(pair.symbol)}
+                      className={cn("w-full rounded border px-2 py-1.5 text-left text-xs", isDark ? "border-[#22395f] bg-[#091731] text-slate-200" : "border-slate-300 bg-white text-slate-700")}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{pair.symbol}</span>
+                        <span>{pair.bid}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             </div>
 
@@ -626,14 +668,14 @@ export default function WebTraderPage() {
                   <p className={cn("font-semibold", isDark ? "text-slate-100" : "text-slate-800")}>{selectedQuote?.symbol}</p>
                   <p className={cn("text-xs", isDark ? "text-slate-400" : "text-slate-500")}>1 · MetaApi</p>
                   <div className="flex items-center gap-1.5 text-xs">
-                    <span className="text-emerald-400">O {lastCandle?.open.toFixed(decimals)}</span>
-                    <span className="text-slate-300">H {lastCandle?.high.toFixed(decimals)}</span>
-                    <span className="text-slate-300">L {lastCandle?.low.toFixed(decimals)}</span>
+                    <span className="text-emerald-400">O {lastOpen.toFixed(decimals)}</span>
+                    <span className="text-slate-300">H {lastHigh.toFixed(decimals)}</span>
+                    <span className="text-slate-300">L {lastLow.toFixed(decimals)}</span>
                     <span
-                      className={cn(lastCandle?.close && lastCandle?.open && lastCandle.close >= lastCandle.open ? "text-emerald-400" : "")}
-                      style={lastCandle?.close && lastCandle?.open && lastCandle.close >= lastCandle.open ? undefined : { color: STRESS_COLOR }}
+                      className={cn(lastClose >= lastOpen ? "text-emerald-400" : "")}
+                      style={lastClose >= lastOpen ? undefined : { color: STRESS_COLOR }}
                     >
-                      C {lastCandle?.close.toFixed(decimals)}
+                      C {lastClose.toFixed(decimals)}
                     </span>
                   </div>
                 </div>
@@ -669,7 +711,7 @@ export default function WebTraderPage() {
                     </SelectContent>
                   </Select>
                   <div className="text-right">
-                    <p className={cn("text-sm font-semibold", isDark ? "text-slate-100" : "text-slate-800")}>{selectedQuote?.bid.toFixed(decimals)}</p>
+                    <p className={cn("text-sm font-semibold", isDark ? "text-slate-100" : "text-slate-800")}>{quoteBid.toFixed(decimals)}</p>
                     <p className={cn("text-xs", (selectedQuote?.changePercent ?? 0) >= 0 ? "text-emerald-400" : "")} style={(selectedQuote?.changePercent ?? 0) >= 0 ? undefined : { color: STRESS_COLOR }}>
                       {(selectedQuote?.changePercent ?? 0) >= 0 ? "+" : ""}
                       {(selectedQuote?.changePercent ?? 0).toFixed(2)}%
@@ -693,7 +735,7 @@ export default function WebTraderPage() {
                 </div>
               )}
 
-              <div className="h-[380px] sm:h-[420px] px-2 pt-1 pb-1">
+              <div className="h-[400px] sm:h-[460px] px-2 pt-1 pb-1">
                 <div
                   ref={chartContainerRef}
                   onWheel={handleChartWheel}
@@ -906,7 +948,7 @@ export default function WebTraderPage() {
                 </div>
                 <div className="mt-2 flex items-end justify-between">
                   <p className="text-[38px] font-semibold leading-none" style={{ color: STRESS_COLOR }}>
-                    {selectedQuote?.last.toFixed(decimals)}
+                    {quoteLast.toFixed(decimals)}
                   </p>
                   <p className={cn("text-[11px]", (selectedQuote?.changePercent ?? 0) >= 0 ? "text-emerald-400" : "")} style={(selectedQuote?.changePercent ?? 0) >= 0 ? undefined : { color: STRESS_COLOR }}>
                     {(selectedQuote?.changePercent ?? 0) >= 0 ? "+" : ""}
@@ -1068,7 +1110,7 @@ export default function WebTraderPage() {
                         )}
                       >
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-red-400">Sell</p>
-                        <p className={cn("text-lg font-bold", isDark ? "text-slate-100" : "text-slate-900")}>{selectedQuote?.bid.toFixed(decimals)}</p>
+                        <p className={cn("text-lg font-bold", isDark ? "text-slate-100" : "text-slate-900")}>{quoteBid.toFixed(decimals)}</p>
                       </button>
                       <button
                         type="button"
@@ -1081,7 +1123,7 @@ export default function WebTraderPage() {
                         )}
                       >
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-400">Buy</p>
-                        <p className={cn("text-lg font-bold", isDark ? "text-slate-100" : "text-slate-900")}>{selectedQuote?.ask.toFixed(decimals)}</p>
+                        <p className={cn("text-lg font-bold", isDark ? "text-slate-100" : "text-slate-900")}>{quoteAsk.toFixed(decimals)}</p>
                       </button>
                     </div>
 
@@ -1140,7 +1182,7 @@ export default function WebTraderPage() {
 
                     <div className={cn("rounded-lg border p-3 text-sm space-y-1.5", isDark ? "border-[#2a4068] bg-[#0b1730]" : "border-slate-300 bg-white")}>
                       <p className={cn("font-medium", isDark ? "text-slate-100" : "text-slate-800")}>Trading Charges</p>
-                      <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}><span>Spread</span><span>{selectedQuote?.spread.toFixed(decimals)} pips</span></div>
+                      <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}><span>Spread</span><span>{quoteSpread.toFixed(decimals)} pips</span></div>
                       <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}><span>Commission</span><span>${estimatedCommission}</span></div>
                     </div>
 
@@ -1163,7 +1205,7 @@ export default function WebTraderPage() {
                       Open {orderSide.toUpperCase()} Order
                     </Button>
                     <p className={cn("text-center text-xs", isDark ? "text-slate-500" : "text-slate-500")}>
-                      {Number(volume || "0").toFixed(2)} lot @ {orderSide === "buy" ? selectedQuote?.ask.toFixed(decimals) : selectedQuote?.bid.toFixed(decimals)}
+                      {Number(volume || "0").toFixed(2)} lot @ {orderSide === "buy" ? quoteAsk.toFixed(decimals) : quoteBid.toFixed(decimals)}
                     </p>
 
                     <Button variant="outline" className="w-full gap-1" onClick={() => actions.toggleWatchlist(selectedSymbol)}>

@@ -115,11 +115,21 @@ const pastResults = [
   { season: "December Finale 2025", rank: 11, profit: "+$1,990.00", prize: "$0.00", participants: 640 },
 ]
 
+const ibLeaderboard = [
+  { rank: 1, name: "Hawk IB Team", ibFees: "$12,840", referrals: 92, lotVolume: "1,820 lots", month: "Mar 2026" },
+  { rank: 2, name: "ByteX Partners", ibFees: "$10,110", referrals: 85, lotVolume: "1,540 lots", month: "Mar 2026" },
+  { rank: 3, name: "Voyager Group", ibFees: "$9,265", referrals: 74, lotVolume: "1,422 lots", month: "Mar 2026" },
+  { rank: 4, name: "GoldHunter IB", ibFees: "$7,990", referrals: 63, lotVolume: "1,160 lots", month: "Mar 2026" },
+  { rank: 5, name: "FXMaster Desk", ibFees: "$6,780", referrals: 57, lotVolume: "1,005 lots", month: "Mar 2026" },
+]
+const ibPodium = [ibLeaderboard[1], ibLeaderboard[0], ibLeaderboard[2]]
+
 const COMPETITIONS_STORAGE_KEY = "forexpro-competitions-state"
 
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState(initialCompetitions)
   const [podiumOffset, setPodiumOffset] = useState(0)
+  const [leaderboardView, setLeaderboardView] = useState<"trading" | "ib">("trading")
   const activeCompetition = competitions.find((c) => c.status === "active" && c.joined)
   const daysRemaining = 2 // Simplified for demo
   const joinedCount = competitions.filter((c) => c.joined).length
@@ -160,7 +170,7 @@ export default function CompetitionsPage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         {/* Page header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Trading Competitions</h1>
@@ -169,7 +179,7 @@ export default function CompetitionsPage() {
 
         {/* Active competition highlight */}
         {activeCompetition && (
-          <Card className="bg-gradient-to-br from-primary/10 via-background to-chart-4/10 border-primary/20">
+          <Card className="order-1 bg-gradient-to-br from-primary/10 via-background to-chart-4/10 border-primary/20">
             <CardContent className="pt-6">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-2">
@@ -207,7 +217,7 @@ export default function CompetitionsPage() {
         )}
 
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="order-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-card border-border">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -254,21 +264,68 @@ export default function CompetitionsPage() {
           </Card>
         </div>
 
-        {/* Leaderboard */}
-        <Card className="border-[#1f3659] bg-[#060d1f] text-slate-100 overflow-hidden">
+        <Tabs defaultValue="active" className="order-3 flex flex-col space-y-6">
+          <TabsList className="grid h-11 w-full grid-cols-3 items-center rounded-xl border border-[#233f63] bg-[#0b1c37]/95 p-1">
+            <TabsTrigger className="h-9 items-center justify-center" value="active">Active ({competitions.filter((c) => c.status === "active").length})</TabsTrigger>
+            <TabsTrigger className="h-9 items-center justify-center" value="upcoming">Upcoming ({competitions.filter((c) => c.status === "upcoming").length})</TabsTrigger>
+            <TabsTrigger className="h-9 items-center justify-center" value="past">Past Results</TabsTrigger>
+          </TabsList>
+
+          {/* Leaderboard */}
+          <Card className="order-2 border-[#1f3659] bg-[#060d1f] text-slate-100 overflow-hidden">
           <CardHeader className="border-b border-[#1b2e4c] bg-[radial-gradient(ellipse_at_top,rgba(22,163,255,0.18),rgba(6,13,31,0.95)_64%)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-slate-100">Leaderboard - Rise to the Top</CardTitle>
-                <CardDescription className="text-slate-300/75">Live points ranking with podium highlights</CardDescription>
+                <CardTitle className="text-slate-100">
+                  {leaderboardView === "trading"
+                    ? "Leaderboard - Rise to the Top"
+                    : "Trader of the Month - IB Leaderboard"}
+                </CardTitle>
+                <CardDescription className="text-slate-300/75">
+                  {leaderboardView === "trading"
+                    ? "Live points ranking with podium highlights"
+                    : "Ranking by IB referral fees generated in the current competition cycle."}
+                </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872] gap-1.5"><Flame className="h-3 w-3" />Live Points</Badge>
-                <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872]">$10,000 Pool</Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="grid grid-cols-2 rounded-lg border border-[#2b4a75] bg-[#0e2242] p-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setLeaderboardView("trading")}
+                    className={cn(
+                      "h-7 px-3 text-xs",
+                      leaderboardView === "trading" ? "bg-[#16325b] text-cyan-100" : "text-slate-300"
+                    )}
+                  >
+                    Current Leaderboard
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setLeaderboardView("ib")}
+                    className={cn(
+                      "h-7 px-3 text-xs",
+                      leaderboardView === "ib" ? "bg-[#16325b] text-cyan-100" : "text-slate-300"
+                    )}
+                  >
+                    IB Leaderboard
+                  </Button>
+                </div>
+                {leaderboardView === "trading" && (
+                  <>
+                    <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872] gap-1.5"><Flame className="h-3 w-3" />Live Points</Badge>
+                    <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872]">$10,000 Pool</Badge>
+                  </>
+                )}
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6 p-4 sm:p-6">
+            {leaderboardView === "trading" && (
+              <>
             <div className="relative overflow-hidden rounded-2xl border border-[#244066] bg-[linear-gradient(180deg,rgba(12,28,54,0.95),rgba(7,16,34,1))] p-4 sm:p-5">
               <div className="pointer-events-none absolute inset-0">
                 <div className="absolute -left-12 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-cyan-500/15 blur-3xl" />
@@ -424,18 +481,106 @@ export default function CompetitionsPage() {
                 </Table>
               </div>
             </div>
+              </>
+            )}
+            {leaderboardView === "ib" && (
+              <div className="space-y-4">
+                <div className="relative overflow-hidden rounded-2xl border border-[#244066] bg-[linear-gradient(180deg,rgba(12,28,54,0.95),rgba(7,16,34,1))] p-4 sm:p-5">
+                  <div className="grid gap-4 md:grid-cols-3 md:items-end">
+                    {ibPodium.map((entry, idx) => {
+                      const center = idx === 1
+                      const avatarByRank: Record<number, string> = {
+                        1: podiumAvatars[1],
+                        2: podiumAvatars[2],
+                        3: podiumAvatars[3],
+                      }
+                      return (
+                        <div
+                          key={`ib-${entry.rank}`}
+                          className={cn(
+                            "group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500",
+                            center ? "border-cyan-300/70 bg-[#10274a] md:scale-105 shadow-[0_0_36px_rgba(34,211,238,0.18)]" : "border-[#29466c] bg-[#0d203c]"
+                          )}
+                        >
+                          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.2),transparent_58%)]" />
+                          <div className="relative z-10 mx-auto mb-2 flex w-fit flex-col items-center">
+                            <div className={cn(
+                              "relative flex items-center justify-center rounded-full border border-cyan-300/45 bg-[#0d2140] shadow-[0_0_0_6px_rgba(34,211,238,0.08)]",
+                              center ? "h-[76px] w-[76px]" : "h-[68px] w-[68px]"
+                            )}>
+                              <Avatar className={cn(center ? "h-16 w-16" : "h-14 w-14")}>
+                                <AvatarImage src={avatarByRank[entry.rank]} alt={entry.name} />
+                                <AvatarFallback className="bg-[#1a3358] font-semibold text-cyan-100">
+                                  {entry.name.slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="absolute -bottom-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#3d6799] bg-[#10294e] px-1 text-[10px] font-semibold text-cyan-100">
+                                {entry.rank}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-sm font-semibold text-slate-100">{entry.name}</p>
+                          <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-cyan-300/55 bg-[linear-gradient(180deg,rgba(22,58,104,0.95),rgba(13,37,72,0.95))] px-2.5 py-1 text-[10px] font-semibold text-cyan-100 shadow-[0_6px_16px_rgba(3,12,30,0.45)]">
+                            <Coins className="h-3.5 w-3.5 text-amber-300" />
+                            Top IB Winner
+                          </div>
+                          <p className="mt-2 text-lg font-bold text-emerald-400">{entry.ibFees}</p>
+                          <p className="text-xs text-slate-300/80">{entry.referrals} referrals</p>
+                          <p className="text-xs text-slate-400">{entry.lotVolume}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-[#1e3555] bg-[#050b19] p-3">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-100">IB Top Teams</p>
+                    <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872]">Trader of the Month</Badge>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-[#1b2f4b] hover:bg-transparent">
+                          <TableHead className="text-slate-300/70">Rank</TableHead>
+                          <TableHead className="text-slate-300/70">IB Team</TableHead>
+                        <TableHead className="text-slate-300/70">ROI / Referrals</TableHead>
+                          <TableHead className="text-slate-300/70">Lot Volume</TableHead>
+                          <TableHead className="text-right text-slate-300/70">IB Fees</TableHead>
+                          <TableHead className="text-right text-slate-300/70">Month</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {ibLeaderboard.map((entry) => (
+                          <TableRow key={entry.rank} className="border-[#1b2f4b] hover:bg-[#0d1d38]">
+                            <TableCell className="font-semibold text-slate-100">#{entry.rank}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-7 w-7">
+                                  <AvatarImage src={entry.rank <= 3 ? podiumAvatars[entry.rank === 1 ? 1 : entry.rank === 2 ? 2 : 3] : undefined} alt={entry.name} />
+                                  <AvatarFallback className="bg-[#132948] text-[10px] text-cyan-100">IB</AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-100">{entry.name}</p>
+                                  <p className="text-xs text-slate-300/60">@ib-team-{entry.rank}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-emerald-400 font-medium">+{entry.referrals}%</TableCell>
+                            <TableCell className="text-slate-300">{entry.lotVolume}</TableCell>
+                            <TableCell className="text-right font-semibold text-emerald-400">{entry.ibFees}</TableCell>
+                            <TableCell className="text-right text-slate-300">{entry.month}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
-        </Card>
+          </Card>
 
-        {/* Competition List */}
-        <Tabs defaultValue="active" className="space-y-6">
-          <TabsList className="sticky top-16 z-20 grid w-full grid-cols-3 border border-[#233f63] bg-[#0b1c37]/95 p-1 backdrop-blur-sm">
-            <TabsTrigger value="active">Active ({competitions.filter((c) => c.status === "active").length})</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming ({competitions.filter((c) => c.status === "upcoming").length})</TabsTrigger>
-            <TabsTrigger value="past">Past Results</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="active" className="space-y-4">
+          <TabsContent value="active" className="order-1 space-y-4">
             {competitions
               .filter((c) => c.status === "active")
               .map((comp) => (
@@ -484,7 +629,7 @@ export default function CompetitionsPage() {
               ))}
           </TabsContent>
 
-          <TabsContent value="upcoming" className="space-y-4">
+          <TabsContent value="upcoming" className="order-1 space-y-4">
             {competitions
               .filter((c) => c.status === "upcoming")
               .map((comp) => (
@@ -512,7 +657,7 @@ export default function CompetitionsPage() {
               ))}
           </TabsContent>
 
-          <TabsContent value="past">
+          <TabsContent value="past" className="order-1">
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <div className="overflow-x-auto">
@@ -542,6 +687,7 @@ export default function CompetitionsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
     </DashboardShell>

@@ -2,6 +2,8 @@
 
 import { DashboardShell } from "@/components/dashboard/shell"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import {
@@ -13,6 +15,7 @@ import {
 } from "@/components/ui/select"
 import { Calendar, TrendingUp, AlertCircle, Flag } from "lucide-react"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
 const economicEvents = [
   {
@@ -129,11 +132,29 @@ const getImpactColor = (impact: string) => {
 }
 
 export default function AnalyticsPage() {
+  const [analyticsView, setAnalyticsView] = useState<"market" | "ib-transfer">("market")
   const [eventSearch, setEventSearch] = useState("")
   const [newsSearch, setNewsSearch] = useState("")
   const [impactFilter, setImpactFilter] = useState<"all" | "high" | "medium" | "low">("all")
   const [calendarRegion, setCalendarRegion] = useState("all")
   const [newsCategory, setNewsCategory] = useState("all")
+  const [ibTransferTab, setIbTransferTab] = useState<"wallet" | "trading">("wallet")
+  const [ibSource, setIbSource] = useState("weekly-referrals")
+  const [transferAmount, setTransferAmount] = useState("")
+  const [targetTradingAccount, setTargetTradingAccount] = useState("mt5-main-001")
+  const [memo, setMemo] = useState("")
+  const [ibTransferHistory, setIbTransferHistory] = useState<Array<{
+    id: string
+    date: string
+    from: string
+    to: string
+    amount: number
+    status: "Completed" | "Pending"
+  }>>([
+    { id: "ib-1", date: "Mar 16, 2026", from: "Weekly Referrals", to: "Wallet USD", amount: 350, status: "Completed" },
+    { id: "ib-2", date: "Mar 15, 2026", from: "Monthly IB Bonus", to: "MT5 Main #001", amount: 500, status: "Completed" },
+  ])
+  const [availableIbFees, setAvailableIbFees] = useState(1840)
 
   const filteredEvents = useMemo(() => {
     return economicEvents.filter((event) => {
@@ -157,6 +178,35 @@ export default function AnalyticsPage() {
     })
   }, [newsSearch, newsCategory])
 
+  const submitIbTransfer = () => {
+    const amount = Number(transferAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Please enter a valid transfer amount")
+      return
+    }
+    if (amount > availableIbFees) {
+      toast.error("Transfer exceeds available IB fees")
+      return
+    }
+    const sourceLabel = ibSource === "weekly-referrals" ? "Weekly Referrals" : ibSource === "monthly-commission" ? "Monthly Commission" : "IB Bonus Pool"
+    const targetLabel = ibTransferTab === "wallet" ? "Wallet USD" : `MT5 ${targetTradingAccount}`
+    setAvailableIbFees((prev) => prev - amount)
+    setIbTransferHistory((prev) => [
+      {
+        id: `ib-${Date.now()}`,
+        date: new Date().toLocaleDateString(),
+        from: sourceLabel,
+        to: targetLabel,
+        amount,
+        status: "Completed",
+      },
+      ...prev,
+    ])
+    setTransferAmount("")
+    setMemo("")
+    toast.success("IB fee transfer completed")
+  }
+
   return (
     <DashboardShell>
       <div className="space-y-6">
@@ -166,6 +216,21 @@ export default function AnalyticsPage() {
           <p className="text-muted-foreground">Economic calendar and market news to inform your trading decisions.</p>
         </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Tabs value={analyticsView} onValueChange={(value) => setAnalyticsView(value as "market" | "ib-transfer")} className="w-full max-w-md">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="market">Market Analysis</TabsTrigger>
+              <TabsTrigger value="ib-transfer">IB Fee Transfer</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+              Available IB Fees: ${availableIbFees.toFixed(2)}
+            </Badge>
+          </div>
+        </div>
+
+        {analyticsView === "market" ? (
         <Tabs defaultValue="calendar" className="space-y-4">
           <TabsList className="grid w-full max-w-xs grid-cols-2 sm:max-w-sm">
             <TabsTrigger value="calendar" className="gap-2">
@@ -308,6 +373,94 @@ export default function AnalyticsPage() {
             </div>
           </TabsContent>
         </Tabs>
+        ) : (
+          <Card className="p-6 space-y-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={ibSource} onValueChange={setIbSource}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="IB source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly-referrals">Weekly Referrals</SelectItem>
+                  <SelectItem value="monthly-commission">Monthly Commission</SelectItem>
+                  <SelectItem value="bonus-pool">IB Bonus Pool</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                value={transferAmount}
+                onChange={(e) => setTransferAmount(e.target.value)}
+                placeholder="Transfer amount"
+                className="w-[180px]"
+              />
+              <Input
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                placeholder="Reference memo (optional)"
+                className="w-[260px]"
+              />
+            </div>
+
+            <Tabs value={ibTransferTab} onValueChange={(value) => setIbTransferTab(value as "wallet" | "trading")} className="space-y-4">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="wallet">Transfer to Wallet</TabsTrigger>
+                <TabsTrigger value="trading">Transfer to Trading Account</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="wallet" className="space-y-4">
+                <Card className="p-4 bg-muted/30">
+                  <p className="text-sm text-muted-foreground mb-3">Move IB fees to client wallet for internal transfers or withdrawal.</p>
+                  <Button onClick={submitIbTransfer}>Transfer to Wallet</Button>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="trading" className="space-y-4">
+                <Card className="p-4 bg-muted/30 space-y-3">
+                  <Select value={targetTradingAccount} onValueChange={setTargetTradingAccount}>
+                    <SelectTrigger className="w-[260px]">
+                      <SelectValue placeholder="Target account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mt5-main-001">Main #001 (MT5)</SelectItem>
+                      <SelectItem value="mt5-pro-102">Pro #102 (MT5)</SelectItem>
+                      <SelectItem value="demo-778">Demo #778</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={submitIbTransfer}>Transfer to Trading Account</Button>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="py-2 px-3 text-left text-muted-foreground">Date</th>
+                    <th className="py-2 px-3 text-left text-muted-foreground">From</th>
+                    <th className="py-2 px-3 text-left text-muted-foreground">To</th>
+                    <th className="py-2 px-3 text-right text-muted-foreground">Amount</th>
+                    <th className="py-2 px-3 text-right text-muted-foreground">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ibTransferHistory.map((item) => (
+                    <tr key={item.id} className="border-b border-border/70">
+                      <td className="py-2 px-3">{item.date}</td>
+                      <td className="py-2 px-3">{item.from}</td>
+                      <td className="py-2 px-3">{item.to}</td>
+                      <td className="py-2 px-3 text-right font-semibold">${item.amount.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right">
+                        <span className="inline-flex rounded px-2 py-0.5 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
 
         {/* Trading Tips */}
         <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 p-6">
