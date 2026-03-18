@@ -122,7 +122,6 @@ const ibLeaderboard = [
   { rank: 4, name: "GoldHunter IB", ibFees: "$7,990", referrals: 63, lotVolume: "1,160 lots", month: "Mar 2026" },
   { rank: 5, name: "FXMaster Desk", ibFees: "$6,780", referrals: 57, lotVolume: "1,005 lots", month: "Mar 2026" },
 ]
-const ibPodium = [ibLeaderboard[1], ibLeaderboard[0], ibLeaderboard[2]]
 
 const COMPETITIONS_STORAGE_KEY = "forexpro-competitions-state"
 
@@ -279,12 +278,12 @@ export default function CompetitionsPage() {
                 <CardTitle className="text-slate-100">
                   {leaderboardView === "trading"
                     ? "Leaderboard - Rise to the Top"
-                    : "Trader of the Month - IB Leaderboard"}
+                    : "IB Leaderboard"}
                 </CardTitle>
                 <CardDescription className="text-slate-300/75">
                   {leaderboardView === "trading"
                     ? "Live points ranking with podium highlights"
-                    : "Ranking by IB referral fees generated in the current competition cycle."}
+                    : "Ranks IB partners by referred trades and generated volume."}
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -484,58 +483,10 @@ export default function CompetitionsPage() {
               </>
             )}
             {leaderboardView === "ib" && (
-              <div className="space-y-4">
-                <div className="relative overflow-hidden rounded-2xl border border-[#244066] bg-[linear-gradient(180deg,rgba(12,28,54,0.95),rgba(7,16,34,1))] p-4 sm:p-5">
-                  <div className="grid gap-4 md:grid-cols-3 md:items-end">
-                    {ibPodium.map((entry, idx) => {
-                      const center = idx === 1
-                      const avatarByRank: Record<number, string> = {
-                        1: podiumAvatars[1],
-                        2: podiumAvatars[2],
-                        3: podiumAvatars[3],
-                      }
-                      return (
-                        <div
-                          key={`ib-${entry.rank}`}
-                          className={cn(
-                            "group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500",
-                            center ? "border-cyan-300/70 bg-[#10274a] md:scale-105 shadow-[0_0_36px_rgba(34,211,238,0.18)]" : "border-[#29466c] bg-[#0d203c]"
-                          )}
-                        >
-                          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.2),transparent_58%)]" />
-                          <div className="relative z-10 mx-auto mb-2 flex w-fit flex-col items-center">
-                            <div className={cn(
-                              "relative flex items-center justify-center rounded-full border border-cyan-300/45 bg-[#0d2140] shadow-[0_0_0_6px_rgba(34,211,238,0.08)]",
-                              center ? "h-[76px] w-[76px]" : "h-[68px] w-[68px]"
-                            )}>
-                              <Avatar className={cn(center ? "h-16 w-16" : "h-14 w-14")}>
-                                <AvatarImage src={avatarByRank[entry.rank]} alt={entry.name} />
-                                <AvatarFallback className="bg-[#1a3358] font-semibold text-cyan-100">
-                                  {entry.name.slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="absolute -bottom-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#3d6799] bg-[#10294e] px-1 text-[10px] font-semibold text-cyan-100">
-                                {entry.rank}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-sm font-semibold text-slate-100">{entry.name}</p>
-                          <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-cyan-300/55 bg-[linear-gradient(180deg,rgba(22,58,104,0.95),rgba(13,37,72,0.95))] px-2.5 py-1 text-[10px] font-semibold text-cyan-100 shadow-[0_6px_16px_rgba(3,12,30,0.45)]">
-                            <Coins className="h-3.5 w-3.5 text-amber-300" />
-                            Top IB Winner
-                          </div>
-                          <p className="mt-2 text-lg font-bold text-emerald-400">{entry.ibFees}</p>
-                          <p className="text-xs text-slate-300/80">{entry.referrals} referrals</p>
-                          <p className="text-xs text-slate-400">{entry.lotVolume}</p>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-[#1e3555] bg-[#050b19] p-3">
+              <div className="rounded-xl border border-[#1e3555] bg-[#050b19] p-3">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-sm font-semibold text-slate-100">IB Top Teams</p>
-                    <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872]">Trader of the Month</Badge>
+                    <Badge className="bg-[#0f203e] text-cyan-200 border border-[#274872]">Top Referred Trades</Badge>
                   </div>
                   <div className="overflow-x-auto">
                     <Table>
@@ -543,7 +494,7 @@ export default function CompetitionsPage() {
                         <TableRow className="border-[#1b2f4b] hover:bg-transparent">
                           <TableHead className="text-slate-300/70">Rank</TableHead>
                           <TableHead className="text-slate-300/70">IB Team</TableHead>
-                        <TableHead className="text-slate-300/70">ROI / Referrals</TableHead>
+                          <TableHead className="text-slate-300/70">Referred Trades</TableHead>
                           <TableHead className="text-slate-300/70">Lot Volume</TableHead>
                           <TableHead className="text-right text-slate-300/70">IB Fees</TableHead>
                           <TableHead className="text-right text-slate-300/70">Month</TableHead>
@@ -565,7 +516,7 @@ export default function CompetitionsPage() {
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-emerald-400 font-medium">+{entry.referrals}%</TableCell>
+                            <TableCell className="text-slate-300 font-medium">{entry.referrals}</TableCell>
                             <TableCell className="text-slate-300">{entry.lotVolume}</TableCell>
                             <TableCell className="text-right font-semibold text-emerald-400">{entry.ibFees}</TableCell>
                             <TableCell className="text-right text-slate-300">{entry.month}</TableCell>
@@ -575,7 +526,6 @@ export default function CompetitionsPage() {
                     </Table>
                   </div>
                 </div>
-              </div>
             )}
           </CardContent>
           </Card>
