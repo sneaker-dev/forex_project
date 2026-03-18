@@ -4,9 +4,6 @@ import { DashboardShell } from "@/components/dashboard/shell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
@@ -16,10 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TrendingUp, X, Filter, Search, ArrowLeftRight } from "lucide-react"
+import { TrendingUp, X, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import {
   XAxis,
   YAxis,
@@ -35,24 +32,8 @@ export default function TradingPage() {
   const { state, metrics, actions } = useTradingSim()
   const [symbolFilter, setSymbolFilter] = useState("all")
   const [showWinnersOnly, setShowWinnersOnly] = useState(false)
-  const [search, setSearch] = useState("")
-  const [selectedSymbol, setSelectedSymbol] = useState("XAUUSD")
-  const [oneClickEnabled, setOneClickEnabled] = useState(false)
-  const [volume, setVolume] = useState("0.10")
 
   const allSymbols = useMemo(() => Object.keys(state.quotes), [state.quotes])
-  const watchlistQuotes = useMemo(
-    () =>
-      Object.values(state.quotes).filter((quote) => quote.symbol.toLowerCase().includes(search.toLowerCase())),
-    [state.quotes, search]
-  )
-  const selectedQuote = state.quotes[selectedSymbol] ?? watchlistQuotes[0]
-  const decimals = selectedQuote?.symbol === "XAUUSD" ? 2 : selectedQuote?.symbol?.includes("JPY") ? 3 : 5
-  const quoteLast = selectedQuote?.last ?? 0
-  const quoteOpen = selectedQuote?.open ?? quoteLast
-  const quoteHigh = selectedQuote?.high ?? quoteLast
-  const quoteLow = selectedQuote?.low ?? quoteLast
-  const quoteSpread = selectedQuote?.spread ?? 0
   const visibleOpenPositions = useMemo(() => {
     return state.positions.filter((position) => {
       const symbolMatch = symbolFilter === "all" ? true : position.symbol === symbolFilter
@@ -91,214 +72,348 @@ export default function TradingPage() {
     })
   }, [state.history])
 
-  useEffect(() => {
-    if (!state.quotes[selectedSymbol]) {
-      const fallback = Object.keys(state.quotes)[0]
-      if (fallback) setSelectedSymbol(fallback)
-    }
-  }, [selectedSymbol, state.quotes])
-
-  const placeOneClickOrder = (side: "buy" | "sell") => {
-    const result = actions.placeOrder({
-      symbol: selectedQuote?.symbol ?? selectedSymbol,
-      side,
-      type: "market",
-      volume: Number(volume || "0"),
-    })
-    if (!result.ok) {
-      toast.error("One-click order rejected", { description: result.message })
-      return
-    }
-    toast.success(`${side.toUpperCase()} executed`, { description: result.message })
-  }
-
   return (
     <DashboardShell>
-      <div className="space-y-4 min-w-0">
-        <div className="rounded-xl border border-[#1e3557] bg-[linear-gradient(180deg,#081733,#050d20)] overflow-hidden">
-          <div className="border-b border-[#1b2f4a] px-3 py-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Badge className="border-[#2f4f7d] bg-[#0d2242] text-cyan-100">{selectedQuote?.symbol ?? selectedSymbol}</Badge>
-                <Badge variant="outline" className="border-[#2f4f7d] text-slate-200">Balance ${state.balance.toFixed(2)}</Badge>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-slate-300">
-                {["30s", "1m", "2m", "3m", "5m", "10m", "15m", "30m", "1h", "4h"].map((tf) => (
-                  <span key={tf} className="rounded px-1.5 py-0.5 hover:bg-[#11284c]">{tf}</span>
-                ))}
-              </div>
-            </div>
+      <div className="space-y-6">
+        {/* Page header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Trading Activity</h1>
+            <p className="text-muted-foreground">Synced with Web Trader: positions, pending orders, and history update live.</p>
           </div>
-
-          <div className="grid min-w-0 xl:grid-cols-[240px_minmax(0,1fr)_320px] lg:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="border-r border-[#1b2f4a] bg-[#081325]">
-              <div className="border-b border-[#1b2f4a] px-2 py-1 text-[11px] text-slate-400">Watchlist</div>
-              <div className="p-2">
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search symbol"
-                    className="h-7 border-[#27466f] bg-[#0b1730] pl-7 text-xs text-slate-100"
-                  />
-                </div>
-              </div>
-              <div className="max-h-[560px] overflow-y-auto px-1 pb-2">
-                {watchlistQuotes.map((quote) => (
-                  <button
-                    key={quote.symbol}
-                    type="button"
-                    onClick={() => setSelectedSymbol(quote.symbol)}
-                    className={cn(
-                      "mb-1 w-full rounded border px-2 py-1.5 text-left",
-                      selectedSymbol === quote.symbol ? "border-cyan-500/70 bg-[#122a4f]" : "border-[#1f385c] bg-[#0b1730]"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-100">{quote.symbol}</span>
-                      <span className={cn("text-[10px]", quote.changePercent >= 0 ? "text-emerald-400" : "text-red-400")}>
-                        {quote.changePercent >= 0 ? "+" : ""}
-                        {quote.changePercent.toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>{quote.bid}</span>
-                      <span>{quote.ask}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-r border-[#1b2f4a] bg-[#070f1f]">
-              <div className="border-b border-[#1b2f4a] px-3 py-1.5 text-xs text-slate-300">
-                {selectedQuote?.symbol} · Open {quoteOpen.toFixed(decimals)} · High {quoteHigh.toFixed(decimals)} · Low {quoteLow.toFixed(decimals)}
-              </div>
-              <div className="h-[360px] p-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={pnlData.length ? pnlData : [{ date: "T1", pnl: 0 }]}>
-                    <defs>
-                      <linearGradient id="mt5PnlGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1b3557" />
-                    <XAxis dataKey="date" stroke="#9db1cf" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#9db1cf" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="pnl" stroke="#3b82f6" strokeWidth={2} fill="url(#mt5PnlGradient)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="border-t border-[#1b2f4a]">
-                <div className="grid grid-cols-[1fr_auto] border-b border-[#1b2f4a] px-3 py-1 text-[11px] text-slate-300">
-                  <span>News</span>
-                  <span>Weekly Report</span>
-                </div>
-                <div className="max-h-[170px] overflow-y-auto">
-                  {visibleTradeHistory.slice(0, 6).map((trade, idx) => (
-                    <div key={trade.id} className="grid grid-cols-[1fr_auto] gap-2 border-b border-[#132744] px-3 py-1.5 text-[11px] text-slate-300">
-                      <span className="truncate">{`${trade.symbol} ${trade.reason.replace("_", " ")}`}</span>
-                      <span className="text-slate-500">{`03/${String(idx + 2).padStart(2, "0")} 15:44`}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 bg-[#071022] p-3">
-              <div className="rounded-lg border border-[#223e65] bg-[#0a1428] p-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-[11px] uppercase text-slate-400">Quote</p>
-                    <p className="text-[11px] text-slate-400">{selectedQuote?.symbol} FX</p>
-                  </div>
-                  <ArrowLeftRight className="h-4 w-4 text-slate-400" />
-                </div>
-                <p className="mt-2 text-[38px] font-semibold leading-none text-[#EC3606]">{quoteLast.toFixed(decimals)}</p>
-                <p className={cn("text-xs", (selectedQuote?.changePercent ?? 0) >= 0 ? "text-emerald-400" : "text-red-400")}>
-                  {(selectedQuote?.changePercent ?? 0) >= 0 ? "+" : ""}
-                  {(selectedQuote?.changePercent ?? 0).toFixed(2)}%
-                </p>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-300">
-                  <div className="rounded border border-[#27466f] px-2 py-1">Open {quoteOpen.toFixed(decimals)}</div>
-                  <div className="rounded border border-[#27466f] px-2 py-1">Spread {quoteSpread.toFixed(decimals)}</div>
-                </div>
-                <div className="mt-3 rounded border border-[#2b4368] p-2">
-                  <div className="mb-2 flex items-center justify-between">
-                    <Label className="text-xs text-slate-200">One-Click Trading</Label>
-                    <Switch checked={oneClickEnabled} onCheckedChange={setOneClickEnabled} />
-                  </div>
-                  <Input value={volume} onChange={(e) => setVolume(e.target.value)} type="number" className="mb-2 h-7 border-[#2b436d] bg-[#0b1730] text-xs text-slate-100" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button className="h-8 bg-blue-600 hover:bg-blue-700" disabled={!oneClickEnabled} onClick={() => placeOneClickOrder("buy")}>BUY</Button>
-                    <Button className="h-8 bg-red-600 hover:bg-red-700" disabled={!oneClickEnabled} onClick={() => placeOneClickOrder("sell")}>SELL</Button>
-                  </div>
-                </div>
-              </div>
-
-              <Tabs defaultValue="positions" className="space-y-2">
-                <TabsList className="grid w-full grid-cols-3 border border-[#223a61] bg-[#0b1730]">
-                  <TabsTrigger value="positions">Positions</TabsTrigger>
-                  <TabsTrigger value="orders">Orders</TabsTrigger>
-                  <TabsTrigger value="history">History</TabsTrigger>
-                </TabsList>
-                <TabsContent value="positions" className="rounded border border-[#223e65] bg-[#08132a] p-2 text-xs">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-slate-300">Open ({visibleOpenPositions.length})</span>
-                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={closeAllPositions}>
-                      <X className="mr-1 h-3 w-3" />Close All
-                    </Button>
-                  </div>
-                  {visibleOpenPositions.slice(0, 5).map((position) => (
-                    <div key={position.id} className="mb-1 flex items-center justify-between rounded px-1 py-1">
-                      <span className="text-slate-200">{position.symbol} {position.side.toUpperCase()}</span>
-                      <span className={position.unrealizedPnl >= 0 ? "text-emerald-400" : "text-red-400"}>
-                        {position.unrealizedPnl >= 0 ? "+" : ""}${position.unrealizedPnl.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </TabsContent>
-                <TabsContent value="orders" className="rounded border border-[#223e65] bg-[#08132a] p-2 text-xs">
-                  {visiblePendingOrders.slice(0, 5).map((order) => (
-                    <div key={order.id} className="mb-1 flex items-center justify-between rounded px-1 py-1">
-                      <span className="text-slate-200">{order.symbol} {order.type.toUpperCase()}</span>
-                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => actions.cancelPendingOrder(order.id)}>Cancel</Button>
-                    </div>
-                  ))}
-                </TabsContent>
-                <TabsContent value="history" className="rounded border border-[#223e65] bg-[#08132a] p-2 text-xs">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-slate-300">Closed Trades</span>
-                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setShowWinnersOnly((prev) => !prev)}>
-                      <Filter className="mr-1 h-3 w-3" />
-                      {showWinnersOnly ? "Show All" : "Winners"}
-                    </Button>
-                  </div>
-                  {visibleTradeHistory.slice(0, 5).map((trade) => (
-                    <div key={trade.id} className="mb-1 flex items-center justify-between rounded px-1 py-1">
-                      <span className="text-slate-200">{trade.symbol} {trade.side.toUpperCase()}</span>
-                      <span className={trade.realizedPnl >= 0 ? "text-emerald-400" : "text-red-400"}>
-                        {trade.realizedPnl >= 0 ? "+" : ""}${trade.realizedPnl.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-
-          <div className="border-t border-[#1b2f4a] bg-[#050a16] px-3 py-2 text-xs text-slate-300">
-            <div className="flex flex-wrap gap-4">
-              <span>Balance: ${state.balance.toFixed(2)}</span>
-              <span>Equity: ${metrics.equity.toFixed(2)}</span>
-              <span>Open P/L: {metrics.openPnl >= 0 ? "+" : ""}${metrics.openPnl.toFixed(2)}</span>
-              <span>Open Volume: {metrics.openVolume.toFixed(2)} lots</span>
-            </div>
+          <div className="flex gap-2 overflow-x-auto">
+            <Button size="sm" variant={symbolFilter === "all" ? "default" : "outline"} onClick={() => setSymbolFilter("all")}>All</Button>
+            {allSymbols.map((symbol) => (
+              <Button key={symbol} size="sm" variant={symbolFilter === symbol ? "default" : "outline"} onClick={() => setSymbolFilter(symbol)}>
+                {symbol}
+              </Button>
+            ))}
           </div>
         </div>
+
+        {/* Summary cards */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-card border-border">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Open P/L</p>
+                  <p className={cn("text-2xl font-bold", metrics.openPnl >= 0 ? "text-chart-1" : "text-chart-2")}>
+                    {metrics.openPnl >= 0 ? "+" : ""}${metrics.openPnl.toFixed(2)}
+                  </p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-chart-1/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Closed P/L (MTD)</p>
+                  <p className={cn("text-2xl font-bold", metrics.realizedPnl >= 0 ? "text-chart-1" : "text-chart-2")}>
+                    {metrics.realizedPnl >= 0 ? "+" : ""}${metrics.realizedPnl.toFixed(2)}
+                  </p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-chart-1/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Open Positions</p>
+                  <p className="text-2xl font-bold text-foreground">{state.positions.length}</p>
+                </div>
+                <div className="text-sm text-muted-foreground">{metrics.openVolume.toFixed(2)} lots</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Equity</p>
+                  <p className="text-2xl font-bold text-foreground">${metrics.equity.toFixed(2)}</p>
+                </div>
+                <div className="text-sm text-muted-foreground">Balance ${state.balance.toFixed(2)}</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* P/L Chart */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle>Profit/Loss Overview</CardTitle>
+            <CardDescription>Realized P/L curve from your latest closed trades</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={pnlData}>
+                  <defs>
+                    <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis
+                    dataKey="date"
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="rounded-lg border border-border bg-card p-3 shadow-lg">
+                            <p className="text-sm font-medium text-foreground">{payload[0].payload.date}</p>
+                            <p className="text-lg font-bold text-chart-1">
+                              ${payload[0].value?.toLocaleString()}
+                            </p>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="pnl"
+                    stroke="var(--chart-1)"
+                    strokeWidth={2}
+                    fill="url(#pnlGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabs for positions, orders, history */}
+        <Tabs defaultValue="positions" className="space-y-6">
+          <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="positions">
+              Open Positions ({visibleOpenPositions.length})
+            </TabsTrigger>
+            <TabsTrigger value="orders">
+              Pending Orders ({visiblePendingOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="history">Trade History</TabsTrigger>
+          </TabsList>
+
+          {/* Open Positions */}
+          <TabsContent value="positions">
+            <Card className="bg-card border-border">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Open Positions</CardTitle>
+                  <CardDescription>Your currently active trades</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" className="gap-2" onClick={closeAllPositions}>
+                  <X className="h-4 w-4" />
+                  Close All
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground">Symbol</TableHead>
+                        <TableHead className="text-muted-foreground">Type</TableHead>
+                        <TableHead className="text-muted-foreground">Volume</TableHead>
+                        <TableHead className="text-muted-foreground">Entry</TableHead>
+                        <TableHead className="text-muted-foreground">Current</TableHead>
+                        <TableHead className="text-muted-foreground">S/L</TableHead>
+                        <TableHead className="text-muted-foreground">T/P</TableHead>
+                        <TableHead className="text-right text-muted-foreground">Profit</TableHead>
+                        <TableHead className="text-muted-foreground"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visibleOpenPositions.map((position) => (
+                        <TableRow key={position.id} className="border-border">
+                          <TableCell className="font-medium text-foreground">{position.symbol}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                position.side === "buy"
+                                  ? "bg-chart-1/20 text-chart-1"
+                                  : "bg-chart-2/20 text-chart-2"
+                              )}
+                            >
+                              {position.side.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{position.volume.toFixed(2)}</TableCell>
+                          <TableCell className="text-muted-foreground">{position.entryPrice}</TableCell>
+                          <TableCell className="text-muted-foreground">{position.currentPrice}</TableCell>
+                          <TableCell className="text-chart-2">{position.stopLoss ?? "-"}</TableCell>
+                          <TableCell className="text-chart-1">{position.takeProfit ?? "-"}</TableCell>
+                          <TableCell
+                            className={cn(
+                              "text-right font-medium",
+                              position.unrealizedPnl >= 0 ? "text-chart-1" : "text-chart-2"
+                            )}
+                          >
+                            {position.unrealizedPnl >= 0 ? "+" : ""}${position.unrealizedPnl.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => actions.closePosition(position.id)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Pending Orders */}
+          <TabsContent value="orders">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle>Pending Orders</CardTitle>
+                <CardDescription>Orders waiting to be executed</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground">Symbol</TableHead>
+                        <TableHead className="text-muted-foreground">Type</TableHead>
+                        <TableHead className="text-muted-foreground">Volume</TableHead>
+                        <TableHead className="text-muted-foreground">Stop Price</TableHead>
+                        <TableHead className="text-muted-foreground">Limit Price</TableHead>
+                        <TableHead className="text-muted-foreground">S/L</TableHead>
+                        <TableHead className="text-muted-foreground">T/P</TableHead>
+                        <TableHead className="text-muted-foreground"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visiblePendingOrders.map((order) => (
+                        <TableRow key={order.id} className="border-border">
+                          <TableCell className="font-medium text-foreground">{order.symbol}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                order.side === "buy"
+                                  ? "bg-chart-1/20 text-chart-1"
+                                  : "bg-chart-2/20 text-chart-2"
+                              )}
+                            >
+                              {order.side.toUpperCase()} {order.type.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{order.volume.toFixed(2)}</TableCell>
+                          <TableCell className="text-muted-foreground">{order.stopPrice ?? "-"}</TableCell>
+                          <TableCell className="text-muted-foreground">{order.limitPrice ?? "-"}</TableCell>
+                          <TableCell className="text-chart-2">{order.stopLoss ?? "-"}</TableCell>
+                          <TableCell className="text-chart-1">{order.takeProfit ?? "-"}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => actions.cancelPendingOrder(order.id)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Trade History */}
+          <TabsContent value="history">
+            <Card className="bg-card border-border">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Trade History</CardTitle>
+                  <CardDescription>Your closed trades</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setShowWinnersOnly((prev) => !prev)}
+                >
+                  <Filter className="h-4 w-4" />
+                  {showWinnersOnly ? "Show All" : "Profitable Only"}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground">Symbol</TableHead>
+                        <TableHead className="text-muted-foreground">Type</TableHead>
+                        <TableHead className="text-muted-foreground">Volume</TableHead>
+                        <TableHead className="text-muted-foreground">Entry</TableHead>
+                        <TableHead className="text-muted-foreground">Close Price</TableHead>
+                        <TableHead className="text-muted-foreground">Closed</TableHead>
+                        <TableHead className="text-muted-foreground">Reason</TableHead>
+                        <TableHead className="text-right text-muted-foreground">Profit</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visibleTradeHistory.map((trade) => (
+                        <TableRow key={trade.id} className="border-border">
+                          <TableCell className="font-medium text-foreground">{trade.symbol}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                trade.side === "buy"
+                                  ? "bg-chart-1/20 text-chart-1"
+                                  : "bg-chart-2/20 text-chart-2"
+                              )}
+                            >
+                              {trade.side.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{trade.volume.toFixed(2)}</TableCell>
+                          <TableCell className="text-muted-foreground">{trade.openPrice}</TableCell>
+                          <TableCell className="text-muted-foreground">{trade.closePrice}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{new Date(trade.closedAt).toLocaleString()}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{trade.reason.replace("_", " ")}</TableCell>
+                          <TableCell
+                            className={cn(
+                              "text-right font-medium",
+                              trade.realizedPnl >= 0 ? "text-chart-1" : "text-chart-2"
+                            )}
+                          >
+                            {trade.realizedPnl >= 0 ? "+" : ""}${trade.realizedPnl.toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardShell>
   )
