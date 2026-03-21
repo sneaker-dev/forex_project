@@ -16,6 +16,10 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Admin CRM (staff)
+
+A separate **Admin CRM** shell is available at **`/admin`** (also linked from the login page as *Admin CRM (staff)*). It includes overview KPIs, user list, client detail tabs (including **Copy Trading**), trade management, copy-trade administration, and placeholder modules for funds, IB, prop challenges, KYC, support, and integrations—matching a typical broker back-office navigation structure.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 ## Learn More

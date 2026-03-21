@@ -281,6 +281,11 @@ export default function LoginPage() {
             {' '}and{' '}
             <Link href="/privacy" className="underline hover:text-slate-400 transition-colors">Privacy Policy</Link>
           </p>
+          <p className="text-center text-slate-600 text-xs mt-2">
+            <Link href="/admin" className="text-slate-500 hover:text-slate-400 transition-colors">
+              Admin CRM (staff)
+            </Link>
+          </p>
         </div>
       </div>
     </div>
