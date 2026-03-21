@@ -37,7 +37,15 @@ export function AdminShell({ children }: AdminShellProps) {
   }, [collapsed, hydrated])
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white antialiased">
+    <div className="relative min-h-screen bg-[#070707] text-white antialiased">
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.35]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)`,
+          backgroundSize: "28px 28px",
+        }}
+      />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(220,38,38,0.12),transparent)]" />
       <div className="hidden lg:block">
         <AdminSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} />
       </div>
@@ -58,7 +66,7 @@ export function AdminShell({ children }: AdminShellProps) {
         )}
       >
         <AdminHeader onMenuClick={() => setMobileMenuOpen(true)} />
-        <main className="p-4 lg:p-6">{children}</main>
+        <main className="mx-auto max-w-[1600px] p-4 lg:p-8">{children}</main>
       </div>
     </div>
   )

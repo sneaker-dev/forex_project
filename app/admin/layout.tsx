@@ -1,9 +1,9 @@
-import { AdminShell } from "@/components/admin/admin-shell"
+import { AdminRoot } from "@/components/admin/admin-root"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="dark min-h-screen">
-      <AdminShell>{children}</AdminShell>
+      <AdminRoot>{children}</AdminRoot>
     </div>
   )
 }

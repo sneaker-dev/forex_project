@@ -1,143 +1,165 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useAdmin } from "@/components/admin/admin-provider"
+import { AdminPageHeader, AdminPrimaryButton, AdminSecondaryButton, adminSurface } from "@/components/admin/admin-ui"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-
-const masters = [
-  { id: "M-001", name: "Hawk FX", strategy: "XAU Scalping", followers: 1820, fee: "20%", status: "Active" },
-  { id: "M-002", name: "ByteX Quant", strategy: "Intraday", followers: 1540, fee: "18%", status: "Active" },
-  { id: "M-003", name: "Voyager Macro", strategy: "Swing", followers: 890, fee: "15%", status: "Paused" },
-]
-
-const links = [
-  { id: "L-9001", master: "Hawk FX", follower: "mdhani212@proton.me", allocation: "$1,000", mode: "Balanced", active: true },
-  { id: "L-9002", master: "ByteX Quant", follower: "diptesh@example.com", allocation: "$2,500", mode: "Aggressive", active: true },
-  { id: "L-9003", master: "Voyager Macro", follower: "demo@example.com", allocation: "$500", mode: "Conservative", active: false },
-]
+import Link from "next/link"
 
 export default function AdminCopyTradingPage() {
+  const { state, toggleCopyLink, setMasterStatus } = useAdmin()
+
+  const activeLinks = state.copyLinks.filter((l) => l.active).length
+  const activeMasters = state.copyMasters.filter((m) => m.status === "Active").length
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border-white/10 bg-[#111]/90 text-white">
-          <CardHeader>
-            <CardTitle className="text-white">Master accounts</CardTitle>
-            <CardDescription className="text-white/50">Approved strategy providers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-white">{masters.length}</p>
-            <p className="text-xs text-white/45">Configure onboarding and performance fees.</p>
-          </CardContent>
-        </Card>
-        <Card className="border-white/10 bg-[#111]/90 text-white">
-          <CardHeader>
-            <CardTitle className="text-white">Active links</CardTitle>
-            <CardDescription className="text-white/50">Follower allocations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-emerald-400">{links.filter((l) => l.active).length}</p>
-            <p className="text-xs text-white/45">Live copy relationships</p>
-          </CardContent>
-        </Card>
-        <Card className="border-white/10 bg-[#111]/90 text-white">
-          <CardHeader>
-            <CardTitle className="text-white">Risk events (24h)</CardTitle>
-            <CardDescription className="text-white/50">Auto-pause / drawdown</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-amber-300">0</p>
-            <p className="text-xs text-white/45">Demo counter</p>
-          </CardContent>
-        </Card>
+      <AdminPageHeader
+        title="Copy trade control"
+        description="Master programmes, performance economics, and follower links — risk and commercial governance."
+        actions={
+          <>
+            <AdminSecondaryButton onClick={() => toast.message("Fee schedule", { description: "Opens pricing matrix." })}>
+              Fee matrix
+            </AdminSecondaryButton>
+            <AdminPrimaryButton onClick={() => toast.message("Onboard master", { description: "Master onboarding wizard." })}>
+              Onboard master
+            </AdminPrimaryButton>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className={cn(adminSurface, "p-5")}>
+          <p className="text-xs font-medium uppercase tracking-wider text-white/45">Live masters</p>
+          <p className="mt-2 text-3xl font-semibold text-white">{activeMasters}</p>
+          <p className="mt-1 text-xs text-white/40">Approved for marketing</p>
+        </div>
+        <div className={cn(adminSurface, "p-5")}>
+          <p className="text-xs font-medium uppercase tracking-wider text-white/45">Active follower links</p>
+          <p className="mt-2 text-3xl font-semibold text-emerald-400">{activeLinks}</p>
+          <p className="mt-1 text-xs text-white/40">Copying enabled</p>
+        </div>
+        <div className={cn(adminSurface, "p-5")}>
+          <p className="text-xs font-medium uppercase tracking-wider text-white/45">Aggregate AUM</p>
+          <p className="mt-2 text-3xl font-semibold text-white">
+            ${(state.copyMasters.reduce((a, m) => a + m.aum, 0) / 1e6).toFixed(2)}M
+          </p>
+          <p className="mt-1 text-xs text-white/40">Across all masters</p>
+        </div>
       </div>
 
-      <Card className="border-white/10 bg-[#111]/90 text-white shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-white">Master providers</CardTitle>
-            <CardDescription className="text-white/50">Visibility and fee policy</CardDescription>
-          </div>
-          <Button type="button" className="bg-red-600 hover:bg-red-500" onClick={() => toast.message("Add master (demo)")}>
-            + Add master
-          </Button>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="text-white/55">ID</TableHead>
-                <TableHead className="text-white/55">Name</TableHead>
-                <TableHead className="text-white/55">Strategy</TableHead>
-                <TableHead className="text-white/55">Followers</TableHead>
-                <TableHead className="text-white/55">Perf. fee</TableHead>
-                <TableHead className="text-white/55">Status</TableHead>
+      <div className={cn(adminSurface, "overflow-x-auto")}>
+        <div className="border-b border-white/[0.06] px-6 py-4">
+          <h3 className="text-sm font-semibold text-white">Master providers</h3>
+          <p className="text-xs text-white/45">Commercial terms and distribution</p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/[0.08] hover:bg-transparent">
+              <TableHead className="text-white/55">ID</TableHead>
+              <TableHead className="text-white/55">Name</TableHead>
+              <TableHead className="text-white/55">Strategy</TableHead>
+              <TableHead className="text-right text-white/55">Followers</TableHead>
+              <TableHead className="text-right text-white/55">Win rate</TableHead>
+              <TableHead className="text-right text-white/55">Fee</TableHead>
+              <TableHead className="text-white/55">Status</TableHead>
+              <TableHead className="text-right text-white/55">Control</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {state.copyMasters.map((m) => (
+              <TableRow key={m.id} className="border-white/[0.06]">
+                <TableCell className="font-mono text-xs">{m.id}</TableCell>
+                <TableCell className="font-medium text-white">{m.name}</TableCell>
+                <TableCell className="text-white/70">{m.strategy}</TableCell>
+                <TableCell className="text-right tabular-nums text-white/85">{m.followers.toLocaleString()}</TableCell>
+                <TableCell className="text-right text-emerald-400/90">{m.winRate}%</TableCell>
+                <TableCell className="text-right text-white/80">{m.feePct}%</TableCell>
+                <TableCell>
+                  <Badge
+                    className={cn(
+                      "border-0",
+                      m.status === "Active" && "bg-emerald-500/20 text-emerald-200",
+                      m.status === "Paused" && "bg-amber-500/20 text-amber-100",
+                      m.status === "Suspended" && "bg-red-500/20 text-red-200"
+                    )}
+                  >
+                    {m.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {m.status === "Active" ? (
+                    <Button size="sm" variant="outline" className="h-8 border-white/15 text-white" onClick={() => setMasterStatus(m.id, "Paused")}>
+                      Pause
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-500" onClick={() => setMasterStatus(m.id, "Active")}>
+                      Resume
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {masters.map((m) => (
-                <TableRow key={m.id} className="border-white/10">
-                  <TableCell className="font-mono text-xs">{m.id}</TableCell>
-                  <TableCell className="font-medium text-white">{m.name}</TableCell>
-                  <TableCell className="text-white/70">{m.strategy}</TableCell>
-                  <TableCell className="tabular-nums text-white/80">{m.followers.toLocaleString()}</TableCell>
-                  <TableCell className="text-white/80">{m.fee}</TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        m.status === "Active"
-                          ? "border-0 bg-emerald-500/20 text-emerald-200"
-                          : "border-0 bg-amber-500/20 text-amber-100"
-                      }
-                    >
-                      {m.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-      <Card className="border-white/10 bg-[#111]/90 text-white shadow-none">
-        <CardHeader>
-          <CardTitle className="text-white">Copy links</CardTitle>
-          <CardDescription className="text-white/50">Master ↔ follower relationships</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="text-white/55">Link ID</TableHead>
-                <TableHead className="text-white/55">Master</TableHead>
-                <TableHead className="text-white/55">Follower</TableHead>
-                <TableHead className="text-white/55">Allocation</TableHead>
-                <TableHead className="text-white/55">Mode</TableHead>
-                <TableHead className="text-white/55">State</TableHead>
+      <div className={cn(adminSurface, "overflow-x-auto")}>
+        <div className="border-b border-white/[0.06] px-6 py-4">
+          <h3 className="text-sm font-semibold text-white">Follower links</h3>
+          <p className="text-xs text-white/45">Allocation and risk posture</p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/[0.08] hover:bg-transparent">
+              <TableHead className="text-white/55">Link</TableHead>
+              <TableHead className="text-white/55">Master</TableHead>
+              <TableHead className="text-white/55">Follower</TableHead>
+              <TableHead className="text-right text-white/55">Allocation</TableHead>
+              <TableHead className="text-white/55">Mode</TableHead>
+              <TableHead className="text-white/55">State</TableHead>
+              <TableHead className="text-right text-white/55">Toggle</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {state.copyLinks.map((l) => (
+              <TableRow key={l.id} className="border-white/[0.06]">
+                <TableCell className="font-mono text-xs">{l.id}</TableCell>
+                <TableCell className="text-white">{l.masterName}</TableCell>
+                <TableCell>
+                  <div>
+                    <p className="text-white/85">{l.followerEmail}</p>
+                    <Link href={`/admin/users/${l.followerId}`} className="text-[11px] text-red-400/90 hover:underline">
+                      Open client
+                    </Link>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-white">${l.allocationUsd.toLocaleString()}</TableCell>
+                <TableCell className="text-white/70">{l.mode}</TableCell>
+                <TableCell>
+                  <Badge className={l.active ? "border-0 bg-emerald-500/20 text-emerald-200" : "border-0 bg-white/10 text-white/60"}>
+                    {l.active ? "Active" : "Stopped"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-white/15 text-white"
+                    onClick={() => toggleCopyLink(l.id, !l.active)}
+                  >
+                    {l.active ? "Stop" : "Resume"}
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {links.map((l) => (
-                <TableRow key={l.id} className="border-white/10">
-                  <TableCell className="font-mono text-xs">{l.id}</TableCell>
-                  <TableCell className="text-white">{l.master}</TableCell>
-                  <TableCell className="text-white/75">{l.follower}</TableCell>
-                  <TableCell className="tabular-nums text-white/80">{l.allocation}</TableCell>
-                  <TableCell className="text-white/70">{l.mode}</TableCell>
-                  <TableCell>
-                    <Badge className={l.active ? "border-0 bg-emerald-500/20 text-emerald-200" : "border-0 bg-white/10 text-white/70"}>
-                      {l.active ? "Active" : "Stopped"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
