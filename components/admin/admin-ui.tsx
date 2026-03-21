@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import type { LucideIcon } from "lucide-react"
 
-/** Consistent CRM surface — subtle lift, inset highlight */
+/** Elevated glass panel — teal edge glow */
 export const adminSurface = cn(
-  "rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0)_40%),#0c0c0c]",
-  "shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_24px_64px_-32px_rgba(0,0,0,0.9)]"
+  "rounded-2xl border border-white/[0.08] bg-slate-900/35 backdrop-blur-xl",
+  "shadow-[0_4px_48px_-12px_rgba(0,0,0,0.65)] ring-1 ring-white/[0.04]",
+  "transition-shadow duration-300 hover:shadow-[0_8px_56px_-16px_rgba(45,212,191,0.06)]"
 )
 
 export function AdminPageHeader({
@@ -22,12 +23,12 @@ export function AdminPageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-4 border-b border-white/[0.06] pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight text-white">{title}</h2>
-        {description ? <p className="mt-1 max-w-2xl text-sm text-white/50">{description}</p> : null}
+    <div className="flex flex-col gap-5 border-b border-white/[0.06] pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="max-w-2xl space-y-1">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-50">{title}</h2>
+        {description ? <p className="text-sm leading-relaxed text-slate-500">{description}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   )
 }
@@ -48,25 +49,25 @@ export function AdminStatCard({
   icon?: LucideIcon
 }) {
   return (
-    <Card className={cn(adminSurface, "text-white")}>
-      <CardContent className="p-5">
+    <Card className={cn(adminSurface, "overflow-hidden text-slate-100")}>
+      <CardContent className="p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-white/45">{label}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-white">{value}</p>
-            {hint ? <p className="mt-1 text-xs text-white/40">{hint}</p> : null}
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+            <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-slate-50">{value}</p>
+            {hint ? <p className="mt-2 text-xs text-slate-500">{hint}</p> : null}
           </div>
           {Icon ? (
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
-              <Icon className="h-5 w-5 text-red-400/90" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/10 ring-1 ring-teal-400/20">
+              <Icon className="h-5 w-5 text-teal-300/95" strokeWidth={1.75} />
             </div>
           ) : null}
         </div>
         {delta ? (
           <p
             className={cn(
-              "mt-3 text-xs font-semibold",
-              positive === undefined ? "text-white/50" : positive ? "text-emerald-400" : "text-red-400"
+              "mt-4 text-xs font-medium",
+              positive === undefined ? "text-slate-500" : positive ? "text-emerald-400/95" : "text-rose-400/90"
             )}
           >
             {delta}
@@ -91,11 +92,11 @@ export function AdminPanel({
   action?: React.ReactNode
 }) {
   return (
-    <Card className={cn(adminSurface, "text-white", className)}>
+    <Card className={cn(adminSurface, "text-slate-100", className)}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div>
-          <CardTitle className="text-base font-semibold text-white">{title}</CardTitle>
-          {description ? <CardDescription className="text-white/45">{description}</CardDescription> : null}
+          <CardTitle className="text-base font-semibold text-slate-100">{title}</CardTitle>
+          {description ? <CardDescription className="text-slate-500">{description}</CardDescription> : null}
         </div>
         {action}
       </CardHeader>
@@ -114,7 +115,7 @@ export function AdminToolbar({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-black/30 p-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 rounded-2xl border border-white/[0.06] bg-slate-900/40 p-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between",
         className
       )}
     >
@@ -132,7 +133,7 @@ export function AdminSecondaryButton({
       type="button"
       variant="secondary"
       className={cn(
-        "border border-white/10 bg-white/[0.06] text-white shadow-none hover:bg-white/10",
+        "rounded-xl border border-white/10 bg-white/[0.04] text-slate-200 shadow-none hover:bg-white/[0.08]",
         className
       )}
       {...props}
@@ -144,5 +145,21 @@ export function AdminPrimaryButton({
   className,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  return <Button type="button" className={cn("bg-red-600 text-white hover:bg-red-500", className)} {...props} />
+  return (
+    <Button
+      type="button"
+      className={cn(
+        "rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 font-semibold text-slate-950 shadow-lg shadow-teal-500/15 transition hover:from-teal-400 hover:to-cyan-400",
+        className
+      )}
+      {...props}
+    />
+  )
 }
+
+/** Shared tab styling — teal accent, not reference-red */
+export const adminTabsListClass =
+  "inline-flex min-h-11 flex-wrap items-center gap-1 rounded-xl border border-white/[0.07] bg-slate-900/55 p-1.5 text-slate-500 backdrop-blur-sm"
+
+export const adminTabsTriggerClass =
+  "rounded-lg px-3 py-2 text-sm font-medium transition-all data-[state=active]:bg-teal-500/15 data-[state=active]:text-teal-100 data-[state=active]:shadow-[inset_0_0_0_1px_rgba(45,212,191,0.22)]"

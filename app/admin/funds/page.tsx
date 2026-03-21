@@ -1,7 +1,14 @@
 "use client"
 
 import { useAdmin } from "@/components/admin/admin-provider"
-import { AdminPageHeader, AdminPrimaryButton, AdminSecondaryButton, adminSurface } from "@/components/admin/admin-ui"
+import {
+  AdminPageHeader,
+  AdminPrimaryButton,
+  AdminSecondaryButton,
+  adminSurface,
+  adminTabsListClass,
+  adminTabsTriggerClass,
+} from "@/components/admin/admin-ui"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -30,14 +37,14 @@ export default function AdminFundsPage() {
       />
 
       <Tabs defaultValue="deposits" className="space-y-4">
-        <TabsList className="border border-white/[0.08] bg-black/50 p-1">
-          <TabsTrigger value="deposits" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
+        <TabsList className={adminTabsListClass}>
+          <TabsTrigger value="deposits" className={adminTabsTriggerClass}>
             Deposits
           </TabsTrigger>
-          <TabsTrigger value="withdrawals" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
+          <TabsTrigger value="withdrawals" className={adminTabsTriggerClass}>
             Withdrawals
           </TabsTrigger>
-          <TabsTrigger value="ledger" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
+          <TabsTrigger value="ledger" className={adminTabsTriggerClass}>
             Ledger
           </TabsTrigger>
         </TabsList>
@@ -47,13 +54,13 @@ export default function AdminFundsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/[0.08] hover:bg-transparent">
-                  <TableHead className="text-white/55">Reference</TableHead>
-                  <TableHead className="text-white/55">Client</TableHead>
-                  <TableHead className="text-right text-white/55">Amount</TableHead>
-                  <TableHead className="text-white/55">Method</TableHead>
-                  <TableHead className="text-white/55">Status</TableHead>
-                  <TableHead className="text-white/55">Requested</TableHead>
-                  <TableHead className="text-right text-white/55">Action</TableHead>
+                  <TableHead className="text-slate-500">Reference</TableHead>
+                  <TableHead className="text-slate-500">Client</TableHead>
+                  <TableHead className="text-right text-slate-500">Amount</TableHead>
+                  <TableHead className="text-slate-500">Method</TableHead>
+                  <TableHead className="text-slate-500">Status</TableHead>
+                  <TableHead className="text-slate-500">Requested</TableHead>
+                  <TableHead className="text-right text-slate-500">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -109,13 +116,13 @@ export default function AdminFundsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/[0.08] hover:bg-transparent">
-                  <TableHead className="text-white/55">Reference</TableHead>
-                  <TableHead className="text-white/55">Client</TableHead>
-                  <TableHead className="text-right text-white/55">Amount</TableHead>
-                  <TableHead className="text-white/55">Rail</TableHead>
-                  <TableHead className="text-white/55">Status</TableHead>
-                  <TableHead className="text-white/55">Requested</TableHead>
-                  <TableHead className="text-right text-white/55">Action</TableHead>
+                  <TableHead className="text-slate-500">Reference</TableHead>
+                  <TableHead className="text-slate-500">Client</TableHead>
+                  <TableHead className="text-right text-slate-500">Amount</TableHead>
+                  <TableHead className="text-slate-500">Rail</TableHead>
+                  <TableHead className="text-slate-500">Status</TableHead>
+                  <TableHead className="text-slate-500">Requested</TableHead>
+                  <TableHead className="text-right text-slate-500">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,7 +167,11 @@ export default function AdminFundsPage() {
                         </div>
                       )}
                       {w.status === "Approved" && (
-                        <Button size="sm" className="h-8 bg-red-600 hover:bg-red-500" onClick={() => setWithdrawalStatus(w.id, "Paid")}>
+                        <Button
+                          size="sm"
+                          className="h-8 bg-gradient-to-r from-teal-500 to-cyan-500 font-semibold text-slate-950 hover:from-teal-400 hover:to-cyan-400"
+                          onClick={() => setWithdrawalStatus(w.id, "Paid")}
+                        >
                           Mark paid
                         </Button>
                       )}
@@ -177,12 +188,12 @@ export default function AdminFundsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/[0.08] hover:bg-transparent">
-                  <TableHead className="text-white/55">Entry</TableHead>
-                  <TableHead className="text-white/55">Client</TableHead>
-                  <TableHead className="text-white/55">Type</TableHead>
-                  <TableHead className="text-right text-white/55">Amount</TableHead>
-                  <TableHead className="text-white/55">Status</TableHead>
-                  <TableHead className="text-white/55">Time</TableHead>
+                  <TableHead className="text-slate-500">Entry</TableHead>
+                  <TableHead className="text-slate-500">Client</TableHead>
+                  <TableHead className="text-slate-500">Type</TableHead>
+                  <TableHead className="text-right text-slate-500">Amount</TableHead>
+                  <TableHead className="text-slate-500">Status</TableHead>
+                  <TableHead className="text-slate-500">Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

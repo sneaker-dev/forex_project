@@ -28,11 +28,11 @@ export default function AdminIbPage() {
 function IbCard({ node, all, depth }: { node: IbNode; all: IbNode[]; depth: number }) {
   const children = all.filter((n) => n.parentId === node.id)
   return (
-    <div className={cn(adminSurface, "p-5", depth > 0 && "ml-4 border-l-2 border-red-500/25 pl-5 sm:ml-8")}>
+    <div className={cn(adminSurface, "p-5", depth > 0 && "ml-4 border-l-2 border-teal-500/30 pl-5 sm:ml-8")}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
-            <Network className="h-5 w-5 text-red-400/90" />
+            <Network className="h-5 w-5 text-teal-400/90" />
           </div>
           <div>
             <p className="font-semibold text-white">{node.name}</p>

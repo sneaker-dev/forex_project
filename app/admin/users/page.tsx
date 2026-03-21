@@ -95,13 +95,13 @@ export default function AdminUsersPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-white/[0.08] hover:bg-transparent">
-              <TableHead className="text-white/55">Client</TableHead>
-              <TableHead className="text-white/55">Country</TableHead>
-              <TableHead className="text-white/55">Tier</TableHead>
-              <TableHead className="text-white/55">KYC</TableHead>
-              <TableHead className="text-right text-white/55">Balance</TableHead>
-              <TableHead className="text-white/55">Status</TableHead>
-              <TableHead className="text-right text-white/55">Actions</TableHead>
+              <TableHead className="text-slate-500">Client</TableHead>
+              <TableHead className="text-slate-500">Country</TableHead>
+              <TableHead className="text-slate-500">Tier</TableHead>
+              <TableHead className="text-slate-500">KYC</TableHead>
+              <TableHead className="text-right text-slate-500">Balance</TableHead>
+              <TableHead className="text-slate-500">Status</TableHead>
+              <TableHead className="text-right text-slate-500">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -109,7 +109,7 @@ export default function AdminUsersPage() {
               <TableRow key={u.id} className="border-white/[0.06]">
                 <TableCell>
                   <div>
-                    <p className="font-medium text-white">{u.name}</p>
+                    <p className="font-medium text-slate-100">{u.name}</p>
                     <p className="text-xs text-white/45">{u.email}</p>
                     <p className="font-mono text-[10px] text-white/30">{u.id}</p>
                   </div>

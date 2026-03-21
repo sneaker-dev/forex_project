@@ -35,7 +35,7 @@ export default function AdminPropFirmPage() {
             </div>
             <div className="mt-4 space-y-3 text-sm text-white/75">
               <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-red-400/80" />
+                <Target className="h-4 w-4 text-teal-400/85" />
                 <span>Profit targets: {p.profitTarget}</span>
               </div>
               <div className="flex items-center gap-2">

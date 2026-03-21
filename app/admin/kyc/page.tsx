@@ -44,7 +44,7 @@ export default function AdminKycPage() {
                   <div>
                     <p className="font-medium text-white">{k.userName}</p>
                     <p className="text-xs text-white/45">{k.email}</p>
-                    <Link href={`/admin/users/${k.userId}`} className="text-[11px] text-red-400/90 hover:underline">
+                    <Link href={`/admin/users/${k.userId}`} className="text-[11px] text-teal-400/95 hover:underline">
                       Open client
                     </Link>
                   </div>

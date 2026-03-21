@@ -37,23 +37,35 @@ export function AdminShell({ children }: AdminShellProps) {
   }, [collapsed, hydrated])
 
   return (
-    <div className="relative min-h-screen bg-[#070707] text-white antialiased">
+    <div
+      className={cn(
+        "admin-scope relative min-h-screen text-[var(--admin-fg)] antialiased",
+        "[font-feature-settings:'tnum'_on,_'lnum'_on]"
+      )}
+    >
+      {/* Aurora mesh — cool slate + teal (not reference red/black) */}
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[#030712]" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_120%_80%_at_0%_-20%,rgba(45,212,191,0.14),transparent_55%)]" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_60%_at_100%_0%,rgba(56,189,248,0.08),transparent_50%)]" />
       <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.35]"
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.2]"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)`,
-          backgroundSize: "28px 28px",
+          backgroundImage: `linear-gradient(rgba(148,163,184,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.03) 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
         }}
       />
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(220,38,38,0.12),transparent)]" />
+
       <div className="hidden lg:block">
         <AdminSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} />
       </div>
 
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-[280px] border-white/10 bg-[#050505] p-0">
+        <SheetContent
+          side="left"
+          className="w-[300px] border-white/10 bg-slate-950/95 p-0 backdrop-blur-2xl"
+        >
           <VisuallyHidden>
-            <SheetTitle>Admin navigation</SheetTitle>
+            <SheetTitle>Navigation</SheetTitle>
           </VisuallyHidden>
           <AdminSidebar collapsed={false} isMobile />
         </SheetContent>
@@ -61,12 +73,12 @@ export function AdminShell({ children }: AdminShellProps) {
 
       <div
         className={cn(
-          "relative z-10 min-w-0 transition-all duration-300",
-          collapsed ? "lg:pl-[72px]" : "lg:pl-[260px]"
+          "relative z-10 min-w-0 transition-all duration-300 ease-out",
+          collapsed ? "lg:pl-[76px]" : "lg:pl-[272px]"
         )}
       >
         <AdminHeader onMenuClick={() => setMobileMenuOpen(true)} />
-        <main className="mx-auto max-w-[1600px] p-4 lg:p-8">{children}</main>
+        <main className="mx-auto max-w-[1580px] px-4 py-8 lg:px-10">{children}</main>
       </div>
     </div>
   )

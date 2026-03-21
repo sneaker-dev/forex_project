@@ -133,7 +133,7 @@ export default function AdminCopyTradingPage() {
                 <TableCell>
                   <div>
                     <p className="text-white/85">{l.followerEmail}</p>
-                    <Link href={`/admin/users/${l.followerId}`} className="text-[11px] text-red-400/90 hover:underline">
+                    <Link href={`/admin/users/${l.followerId}`} className="text-[11px] text-teal-400/95 hover:underline">
                       Open client
                     </Link>
                   </div>

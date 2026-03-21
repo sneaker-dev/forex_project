@@ -28,18 +28,24 @@ export default function AdminEarningsPage() {
         <div className="h-[240px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <defs>
+                <linearGradient id="earnIb" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2dd4bf" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#0891b2" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.08)" vertical={false} />
               <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{
-                  background: "#0f0f0f",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12,
-                  color: "#fff",
+                  background: "rgba(15, 23, 42, 0.96)",
+                  border: "1px solid rgba(148, 163, 184, 0.15)",
+                  borderRadius: 14,
+                  color: "#f1f5f9",
                 }}
                 formatter={(v: number) => [`$${v.toLocaleString()}`, "Commission"]}
               />
-              <Bar dataKey="commission" fill="rgba(248,113,113,0.65)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="commission" fill="url(#earnIb)" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

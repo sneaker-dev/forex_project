@@ -109,7 +109,7 @@ export default function AdminTradesPage() {
                 <TableCell>
                   <div>
                     <p className="font-medium text-white">{t.userName}</p>
-                    <Link href={`/admin/users/${t.userId}`} className="text-[11px] text-red-400/90 hover:underline">
+                    <Link href={`/admin/users/${t.userId}`} className="text-[11px] text-teal-400/95 hover:underline">
                       {t.userId}
                     </Link>
                   </div>
@@ -163,7 +163,7 @@ export default function AdminTradesPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 text-red-400/80 hover:bg-red-500/10"
+                      className="h-8 w-8 text-rose-400/85 hover:bg-rose-500/10"
                       onClick={() => toast.message("Cancel / void", { description: t.id })}
                     >
                       <Trash2 className="h-4 w-4" />
