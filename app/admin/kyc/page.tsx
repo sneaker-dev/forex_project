@@ -11,7 +11,7 @@ import Link from "next/link"
 import type { KycItem } from "@/lib/admin/types"
 
 export default function AdminKycPage() {
-  const { state, setKycStatus } = useAdmin()
+  const { state, setKycStatus, bulkKycToReview } = useAdmin()
 
   return (
     <div className="space-y-6">
@@ -19,7 +19,12 @@ export default function AdminKycPage() {
         title="KYC verification"
         description="Document intake, risk scoring, and approval decisions with immutable audit trail."
         actions={
-          <AdminSecondaryButton onClick={() => toast.message("Bulk assign", { description: "Select rows in the next iteration." })}>
+          <AdminSecondaryButton
+            onClick={() => {
+              bulkKycToReview()
+              toast.success("Queued items moved to In review")
+            }}
+          >
             Bulk assign
           </AdminSecondaryButton>
         }

@@ -12,9 +12,13 @@ import {
 import { ADMIN_SEED } from "@/lib/admin/seed"
 import type {
   AdminState,
+  AdminTrade,
+  AdminUser,
+  CopyMaster,
   KycItem,
   LedgerEntry,
   SupportTicket,
+  ThemeSettings,
   UserStatus,
   WithdrawalRequest,
   DepositRequest,
@@ -37,6 +41,16 @@ type AdminContextValue = {
   toggleCopyLink: (id: string, active: boolean) => void
   setMasterStatus: (id: string, status: AdminState["copyMasters"][0]["status"]) => void
   logActivity: (action: string, target: string, actor?: string, severity?: AdminState["activity"][0]["severity"]) => void
+  addSupportTicket: (t: Omit<SupportTicket, "id" | "updatedAt">) => void
+  addUser: (u: Omit<AdminUser, "id">) => void
+  updateUser: (id: string, patch: Partial<AdminUser>) => void
+  addTrade: (t: Omit<AdminTrade, "id">) => void
+  updateTrade: (id: string, patch: Partial<AdminTrade>) => void
+  removeTrade: (id: string) => void
+  addCopyMaster: (m: Omit<CopyMaster, "id">) => void
+  updateTheme: (patch: Partial<ThemeSettings>) => void
+  testOxapayConnection: () => void
+  bulkKycToReview: () => void
 }
 
 const AdminContext = createContext<AdminContextValue | null>(null)
@@ -176,6 +190,113 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     [logActivity]
   )
 
+  const addSupportTicket = useCallback(
+    (t: Omit<SupportTicket, "id" | "updatedAt">) => {
+      const id = `ST-${Date.now().toString(36).toUpperCase()}`
+      const updatedAt = new Date().toISOString()
+      setState((s) => ({
+        ...s,
+        tickets: [{ ...t, id, updatedAt }, ...s.tickets],
+      }))
+      logActivity("Ticket created", id, "Support", "success")
+    },
+    [logActivity]
+  )
+
+  const addUser = useCallback(
+    (u: Omit<AdminUser, "id">) => {
+      const id = `u-${Date.now().toString(36)}`
+      setState((s) => ({
+        ...s,
+        users: [{ ...u, id }, ...s.users],
+      }))
+      logActivity("Client registered", id, "Admin", "success")
+    },
+    [logActivity]
+  )
+
+  const updateUser = useCallback(
+    (id: string, patch: Partial<AdminUser>) => {
+      setState((s) => ({
+        ...s,
+        users: s.users.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+      }))
+      logActivity("Client profile updated", id, "Admin", "info")
+    },
+    [logActivity]
+  )
+
+  const addTrade = useCallback(
+    (t: Omit<AdminTrade, "id">) => {
+      const id = `T-${Date.now()}`
+      setState((s) => ({
+        ...s,
+        trades: [{ ...t, id }, ...s.trades],
+      }))
+      logActivity("Trade booked", id, "Desk", "info")
+    },
+    [logActivity]
+  )
+
+  const updateTrade = useCallback(
+    (id: string, patch: Partial<AdminTrade>) => {
+      setState((s) => ({
+        ...s,
+        trades: s.trades.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+      }))
+      logActivity("Trade updated", id, "Desk", "info")
+    },
+    [logActivity]
+  )
+
+  const removeTrade = useCallback(
+    (id: string) => {
+      setState((s) => ({
+        ...s,
+        trades: s.trades.filter((x) => x.id !== id),
+      }))
+      logActivity("Trade voided", id, "Desk", "warning")
+    },
+    [logActivity]
+  )
+
+  const addCopyMaster = useCallback(
+    (m: Omit<CopyMaster, "id">) => {
+      const id = `M-${Date.now().toString(36).toUpperCase()}`
+      setState((s) => ({
+        ...s,
+        copyMasters: [{ ...m, id }, ...s.copyMasters],
+      }))
+      logActivity("Master onboarded", id, "Copy Desk", "success")
+    },
+    [logActivity]
+  )
+
+  const updateTheme = useCallback((patch: Partial<ThemeSettings>) => {
+    setState((s) => ({
+      ...s,
+      theme: { ...s.theme, ...patch },
+    }))
+    logActivity("Theme draft published", "branding", "You", "success")
+  }, [logActivity])
+
+  const testOxapayConnection = useCallback(() => {
+    const now = new Date().toISOString()
+    setState((s) => ({
+      ...s,
+      oxapay: { ...s.oxapay, status: "Connected" as const, lastSettlement: now },
+    }))
+    logActivity("Oxapay gateway test OK", "oxapay", "System", "success")
+  }, [logActivity])
+
+  const bulkKycToReview = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      kycItems: s.kycItems.map((k) => (k.status === "Queued" ? { ...k, status: "In Review" as const } : k)),
+    }))
+    logActivity("Bulk KYC → In review", "queue", "Compliance", "info")
+  }, [logActivity])
+
   const value = useMemo<AdminContextValue>(
     () => ({
       state,
@@ -191,6 +312,16 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       toggleCopyLink,
       setMasterStatus,
       logActivity,
+      addSupportTicket,
+      addUser,
+      updateUser,
+      addTrade,
+      updateTrade,
+      removeTrade,
+      addCopyMaster,
+      updateTheme,
+      testOxapayConnection,
+      bulkKycToReview,
     }),
     [
       state,
@@ -206,6 +337,16 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       toggleCopyLink,
       setMasterStatus,
       logActivity,
+      addSupportTicket,
+      addUser,
+      updateUser,
+      addTrade,
+      updateTrade,
+      removeTrade,
+      addCopyMaster,
+      updateTheme,
+      testOxapayConnection,
+      bulkKycToReview,
     ]
   )
 

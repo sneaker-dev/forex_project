@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
 export default function AdminOxapayPage() {
-  const { state } = useAdmin()
+  const { state, testOxapayConnection } = useAdmin()
   const o = state.oxapay
 
   return (
@@ -18,7 +18,14 @@ export default function AdminOxapayPage() {
         title="Oxapay gateway"
         description="Crypto payment routing, webhooks, and settlement health."
         actions={
-          <AdminPrimaryButton onClick={() => toast.success("Connection test initiated")}>Test connection</AdminPrimaryButton>
+          <AdminPrimaryButton
+            onClick={() => {
+              testOxapayConnection()
+              toast.success("Connection OK — status updated")
+            }}
+          >
+            Test connection
+          </AdminPrimaryButton>
         }
       />
       <div className={cn(adminSurface, "grid gap-6 p-6 lg:grid-cols-[1fr_280px]")}>

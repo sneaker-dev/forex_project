@@ -10,17 +10,68 @@ import { Search, Download, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAdmin } from "@/components/admin/admin-provider"
 import { AdminPageHeader, AdminPrimaryButton, AdminSecondaryButton, AdminToolbar, adminSurface } from "@/components/admin/admin-ui"
-import type { UserStatus } from "@/lib/admin/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { downloadCsv } from "@/lib/admin/download"
+import type { AdminUser, UserStatus } from "@/lib/admin/types"
 
 const PAGE_SIZE = 8
 
 export default function AdminUsersPage() {
-  const { state, setUserStatus } = useAdmin()
+  const { state, setUserStatus, addUser } = useAdmin()
   const [q, setQ] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [page, setPage] = useState(0)
+  const [newOpen, setNewOpen] = useState(false)
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [country, setCountry] = useState("")
+  const [tier, setTier] = useState<AdminUser["tier"]>("Retail")
+
+  const exportCsv = () => {
+    const headers = ["id", "name", "email", "country", "status", "tier", "kyc", "balance", "joined", "lastActive"]
+    const rows = state.users.map((u) => [
+      u.id,
+      u.name,
+      u.email,
+      u.country,
+      u.status,
+      u.tier,
+      u.kyc,
+      u.balance,
+      u.joined,
+      u.lastActive,
+    ])
+    downloadCsv(`clients-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows)
+    toast.success("CSV downloaded")
+  }
+
+  const submitNew = () => {
+    if (!name.trim() || !email.trim() || !country.trim()) {
+      toast.error("Name, email, and country are required.")
+      return
+    }
+    const today = new Date().toISOString().slice(0, 10)
+    addUser({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      country: country.trim(),
+      status: "Pending",
+      joined: today,
+      lastActive: "Just now",
+      kyc: "None",
+      balance: 0,
+      tier,
+    })
+    toast.success("Client created")
+    setNewOpen(false)
+    setName("")
+    setEmail("")
+    setCountry("")
+    setTier("Retail")
+  }
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
@@ -47,13 +98,11 @@ export default function AdminUsersPage() {
         description="Authoritative list of trading profiles, tiers, and verification posture."
         actions={
           <>
-            <AdminSecondaryButton onClick={() => toast.success("Export queued", { description: "CSV export would download in production." })}>
+            <AdminSecondaryButton onClick={exportCsv}>
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </AdminSecondaryButton>
-            <AdminPrimaryButton onClick={() => toast.message("Create client", { description: "Opens onboarding wizard (UI only)." })}>
-              New client
-            </AdminPrimaryButton>
+            <AdminPrimaryButton onClick={() => setNewOpen(true)}>New client</AdminPrimaryButton>
           </>
         }
       />
@@ -90,6 +139,65 @@ export default function AdminUsersPage() {
           </SelectContent>
         </Select>
       </AdminToolbar>
+
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="border-white/10 bg-slate-950 text-slate-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New client</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-white/70">Full name</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border-white/10 bg-black/40 text-white"
+                placeholder="Jane Doe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Email</Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border-white/10 bg-black/40 text-white"
+                placeholder="jane@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Country</Label>
+              <Input
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="border-white/10 bg-black/40 text-white"
+                placeholder="United Kingdom"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Tier</Label>
+              <Select value={tier} onValueChange={(v) => setTier(v as AdminUser["tier"])}>
+                <SelectTrigger className="border-white/10 bg-black/40 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Retail">Retail</SelectItem>
+                  <SelectItem value="Pro">Pro</SelectItem>
+                  <SelectItem value="VIP">VIP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06]" onClick={() => setNewOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" className="bg-teal-600 hover:bg-teal-500" onClick={submitNew}>
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className={cn(adminSurface, "overflow-hidden")}>
         <Table>

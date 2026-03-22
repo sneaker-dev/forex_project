@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,14 +20,50 @@ import { cn } from "@/lib/utils"
 export default function AdminUserDetailPage() {
   const params = useParams()
   const id = String(params.id ?? "")
-  const { state } = useAdmin()
+  const { state, updateUser, logActivity } = useAdmin()
   const user = useMemo(() => state.users.find((u) => u.id === id), [state.users, id])
+
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [country, setCountry] = useState("")
 
   const [copyEnabled, setCopyEnabled] = useState(true)
   const [masterId, setMasterId] = useState("M-001")
   const [perfFee, setPerfFee] = useState("20")
 
+  useEffect(() => {
+    if (!user) return
+    const parts = user.name.trim().split(/\s+/)
+    setFirstName(parts[0] ?? "")
+    setLastName(parts.slice(1).join(" ") ?? "")
+    setEmail(user.email)
+    setCountry(user.country)
+    const link = state.copyLinks.find((l) => l.followerId === user.id)
+    setMasterId(link?.masterId ?? state.copyMasters[0]?.id ?? "M-001")
+  }, [user, state.copyLinks, state.copyMasters])
+
   const userLinks = useMemo(() => state.copyLinks.filter((l) => l.followerId === id), [state.copyLinks, id])
+
+  const resetProfile = () => {
+    if (!user) return
+    const parts = user.name.trim().split(/\s+/)
+    setFirstName(parts[0] ?? "")
+    setLastName(parts.slice(1).join(" ") ?? "")
+    setEmail(user.email)
+    setCountry(user.country)
+  }
+
+  const saveProfile = () => {
+    if (!user) return
+    const name = `${firstName} ${lastName}`.trim() || user.name
+    updateUser(user.id, {
+      name,
+      email: email.trim(),
+      country: country.trim(),
+    })
+    toast.success("Profile saved")
+  }
 
   if (!user) {
     return (
@@ -152,11 +188,20 @@ export default function AdminUserDetailPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">First name</Label>
-                <Input defaultValue={user.name.split(" ")[0] ?? user.name} className="border-white/10 bg-slate-950/50 text-slate-100" />
+                <Input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="border-white/10 bg-slate-950/50 text-slate-100"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Last name</Label>
-                <Input className="border-white/10 bg-black/50 text-white" placeholder="Last name" />
+                <Input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="border-white/10 bg-black/50 text-white"
+                  placeholder="Last name"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Mobile</Label>
@@ -168,11 +213,11 @@ export default function AdminUserDetailPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Country</Label>
-                <Input defaultValue={user.country} className="border-white/10 bg-black/50 text-white" />
+                <Input value={country} onChange={(e) => setCountry(e.target.value)} className="border-white/10 bg-black/50 text-white" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Email</Label>
-                <Input defaultValue={user.email} className="border-white/10 bg-black/50 text-white" />
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} className="border-white/10 bg-black/50 text-white" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Nationality</Label>
@@ -203,10 +248,10 @@ export default function AdminUserDetailPage() {
                 <Input className="border-white/10 bg-black/50 text-white" />
               </div>
               <div className="lg:col-span-2 flex justify-end gap-2 pt-2">
-                <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06] text-slate-200">
+                <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06] text-slate-200" onClick={resetProfile}>
                   Discard
                 </Button>
-                <AdminPrimaryButton type="button" onClick={() => toast.success("Profile saved")}>
+                <AdminPrimaryButton type="button" onClick={saveProfile}>
                   Save changes
                 </AdminPrimaryButton>
               </div>
@@ -286,10 +331,29 @@ export default function AdminUserDetailPage() {
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
-                <AdminPrimaryButton type="button" onClick={() => toast.success("Copy policy saved")}>
+                <AdminPrimaryButton
+                  type="button"
+                  onClick={() => {
+                    logActivity(
+                      `Copy policy saved (master ${masterId}, fee ${perfFee}%)`,
+                      user.id,
+                      "Admin",
+                      "success"
+                    )
+                    toast.success("Copy policy saved")
+                  }}
+                >
                   Save policy
                 </AdminPrimaryButton>
-                <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06] text-slate-200">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="border-white/10 bg-white/[0.06] text-slate-200"
+                  onClick={() => {
+                    logActivity("Copy master unlink requested", masterId, "Admin", "warning")
+                    toast.message("Unlink queued — finalize in copy desk")
+                  }}
+                >
                   Unlink master
                 </Button>
               </div>

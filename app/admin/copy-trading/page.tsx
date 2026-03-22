@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useAdmin } from "@/components/admin/admin-provider"
 import { AdminPageHeader, AdminPrimaryButton, AdminSecondaryButton, adminSurface } from "@/components/admin/admin-ui"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -8,12 +9,44 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import type { CopyMaster } from "@/lib/admin/types"
 
 export default function AdminCopyTradingPage() {
-  const { state, toggleCopyLink, setMasterStatus } = useAdmin()
+  const { state, toggleCopyLink, setMasterStatus, addCopyMaster } = useAdmin()
+  const [feeOpen, setFeeOpen] = useState(false)
+  const [onboardOpen, setOnboardOpen] = useState(false)
+  const [name, setName] = useState("")
+  const [strategy, setStrategy] = useState("")
+  const [feePct, setFeePct] = useState("20")
 
   const activeLinks = state.copyLinks.filter((l) => l.active).length
   const activeMasters = state.copyMasters.filter((m) => m.status === "Active").length
+
+  const submitOnboard = () => {
+    const f = Number.parseFloat(feePct)
+    if (!name.trim() || !strategy.trim() || !Number.isFinite(f)) {
+      toast.error("Name, strategy, and fee % are required.")
+      return
+    }
+    const m: Omit<CopyMaster, "id"> = {
+      name: name.trim(),
+      strategy: strategy.trim(),
+      followers: 0,
+      feePct: f,
+      status: "Active",
+      aum: 0,
+      winRate: 65,
+    }
+    addCopyMaster(m)
+    toast.success("Master onboarded")
+    setOnboardOpen(false)
+    setName("")
+    setStrategy("")
+    setFeePct("20")
+  }
 
   return (
     <div className="space-y-6">
@@ -22,15 +55,85 @@ export default function AdminCopyTradingPage() {
         description="Master programmes, performance economics, and follower links — risk and commercial governance."
         actions={
           <>
-            <AdminSecondaryButton onClick={() => toast.message("Fee schedule", { description: "Opens pricing matrix." })}>
-              Fee matrix
-            </AdminSecondaryButton>
-            <AdminPrimaryButton onClick={() => toast.message("Onboard master", { description: "Master onboarding wizard." })}>
-              Onboard master
-            </AdminPrimaryButton>
+            <AdminSecondaryButton onClick={() => setFeeOpen(true)}>Fee matrix</AdminSecondaryButton>
+            <AdminPrimaryButton onClick={() => setOnboardOpen(true)}>Onboard master</AdminPrimaryButton>
           </>
         }
       />
+
+      <Dialog open={feeOpen} onOpenChange={setFeeOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto border-white/10 bg-slate-950 text-slate-100 sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Forex fee schedule (reference)</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-white/50">Spreads from the pricing matrix (read-only).</p>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/[0.08]">
+                <TableHead className="text-white/55">Symbol</TableHead>
+                <TableHead className="text-white/55">Group</TableHead>
+                <TableHead className="text-white/55">Spread</TableHead>
+                <TableHead className="text-white/55">Commission</TableHead>
+                <TableHead className="text-white/55">Swap L/S</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {state.forexCharges.map((r) => (
+                <TableRow key={r.symbol} className="border-white/[0.06]">
+                  <TableCell className="font-mono text-xs text-white/90">{r.symbol}</TableCell>
+                  <TableCell className="text-white/60">{r.group}</TableCell>
+                  <TableCell className="text-white/80">{r.spread}</TableCell>
+                  <TableCell className="text-white/80">{r.commission}</TableCell>
+                  <TableCell className="text-xs text-white/60">
+                    {r.swapLong} / {r.swapShort}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="rounded-lg border border-white/[0.06] bg-black/40 p-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-white/45">Master performance fees</p>
+            <ul className="mt-2 space-y-1 text-sm text-white/80">
+              {state.copyMasters.map((m) => (
+                <li key={m.id} className="flex justify-between gap-2">
+                  <span>{m.name}</span>
+                  <span className="font-mono text-teal-300/90">{m.feePct}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={onboardOpen} onOpenChange={setOnboardOpen}>
+        <DialogContent className="border-white/10 bg-slate-950 text-slate-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Onboard master</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-white/70">Display name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Strategy label</Label>
+              <Input value={strategy} onChange={(e) => setStrategy(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Performance fee (%)</Label>
+              <Input value={feePct} onChange={(e) => setFeePct(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06]" onClick={() => setOnboardOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" className="bg-teal-600 hover:bg-teal-500" onClick={submitOnboard}>
+              Add master
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className={cn(adminSurface, "p-5")}>

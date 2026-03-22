@@ -13,11 +13,26 @@ import { CheckCircle2, LineChart, Pencil, Search, Trash2, TrendingDown, Trending
 import { toast } from "sonner"
 import Link from "next/link"
 import { AdminStatCard } from "@/components/admin/admin-ui"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import type { AdminTrade } from "@/lib/admin/types"
 
 export default function AdminTradesPage() {
-  const { state } = useAdmin()
+  const { state, addTrade, updateTrade, removeTrade } = useAdmin()
   const [q, setQ] = useState("")
   const [status, setStatus] = useState<string>("all")
+
+  const [createOpen, setCreateOpen] = useState(false)
+  const [userId, setUserId] = useState(state.users[0]?.id ?? "")
+  const [symbol, setSymbol] = useState("EURUSD")
+  const [side, setSide] = useState<AdminTrade["side"]>("BUY")
+  const [lots, setLots] = useState("0.1")
+  const [openPrice, setOpenPrice] = useState("1.085")
+  const [tradeStatus, setTradeStatus] = useState<AdminTrade["status"]>("OPEN")
+
+  const [amend, setAmend] = useState<AdminTrade | null>(null)
+  const [amendOpenPrice, setAmendOpenPrice] = useState("")
+  const [amendPnl, setAmendPnl] = useState("")
 
   const metrics = useMemo(() => {
     const total = state.trades.length
@@ -40,17 +55,178 @@ export default function AdminTradesPage() {
     })
   }, [state.trades, q, status])
 
+  const openCreate = () => {
+    setUserId(state.users[0]?.id ?? "")
+    setSymbol("EURUSD")
+    setSide("BUY")
+    setLots("0.1")
+    setOpenPrice("1.085")
+    setTradeStatus("OPEN")
+    setCreateOpen(true)
+  }
+
+  const submitCreate = () => {
+    const u = state.users.find((x) => x.id === userId)
+    const lv = Number.parseFloat(lots)
+    const op = Number.parseFloat(openPrice)
+    if (!u || !Number.isFinite(lv) || !Number.isFinite(op)) {
+      toast.error("Invalid client, lots, or open price.")
+      return
+    }
+    addTrade({
+      userId: u.id,
+      userName: u.name,
+      symbol: symbol.trim().toUpperCase() || "EURUSD",
+      side,
+      lots: lv,
+      openPrice: op,
+      pnl: 0,
+      status: tradeStatus,
+      openedAt: new Date().toISOString(),
+    })
+    toast.success("Trade created")
+    setCreateOpen(false)
+  }
+
+  const openAmendDialog = (t: AdminTrade) => {
+    setAmend(t)
+    setAmendOpenPrice(String(t.openPrice))
+    setAmendPnl(String(t.pnl))
+  }
+
+  const submitAmend = () => {
+    if (!amend) return
+    const op = Number.parseFloat(amendOpenPrice)
+    const p = Number.parseFloat(amendPnl)
+    if (!Number.isFinite(op) || !Number.isFinite(p)) {
+      toast.error("Enter valid numbers for open price and P&L.")
+      return
+    }
+    updateTrade(amend.id, { openPrice: op, pnl: p })
+    toast.success("Trade amended")
+    setAmend(null)
+  }
+
+  const reconcile = (id: string) => {
+    updateTrade(id, { status: "CLOSED" })
+    toast.success("Trade reconciled (closed)")
+  }
+
+  const voidTrade = (t: AdminTrade) => {
+    if (typeof window !== "undefined" && !window.confirm(`Void trade ${t.id}? This cannot be undone in the demo.`)) return
+    removeTrade(t.id)
+    toast.success("Trade voided")
+  }
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Trade surveillance"
         description="Cross-account execution, P&amp;L, and lifecycle — integrated with desk workflows."
         actions={
-          <AdminPrimaryButton onClick={() => toast.message("Execution ticket", { description: "Manual trade composer (UI)." })}>
-            + Create trade
-          </AdminPrimaryButton>
+          <AdminPrimaryButton onClick={openCreate}>+ Create trade</AdminPrimaryButton>
         }
       />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="border-white/10 bg-slate-950 text-slate-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create trade</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-white/70">Client</Label>
+              <Select value={userId} onValueChange={setUserId}>
+                <SelectTrigger className="border-white/10 bg-black/50 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {state.users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Symbol</Label>
+              <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-white/70">Side</Label>
+                <Select value={side} onValueChange={(v) => setSide(v as AdminTrade["side"])}>
+                  <SelectTrigger className="border-white/10 bg-black/50 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BUY">BUY</SelectItem>
+                    <SelectItem value="SELL">SELL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/70">Status</Label>
+                <Select value={tradeStatus} onValueChange={(v) => setTradeStatus(v as AdminTrade["status"])}>
+                  <SelectTrigger className="border-white/10 bg-black/50 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPEN">OPEN</SelectItem>
+                    <SelectItem value="PENDING">PENDING</SelectItem>
+                    <SelectItem value="CLOSED">CLOSED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-white/70">Lots</Label>
+                <Input value={lots} onChange={(e) => setLots(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/70">Open price</Label>
+                <Input value={openPrice} onChange={(e) => setOpenPrice(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06]" onClick={() => setCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" className="bg-teal-600 hover:bg-teal-500" onClick={submitCreate}>
+              Book trade
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!amend} onOpenChange={(o) => !o && setAmend(null)}>
+        <DialogContent className="border-white/10 bg-slate-950 text-slate-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Amend trade {amend?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-white/70">Open price</Label>
+              <Input value={amendOpenPrice} onChange={(e) => setAmendOpenPrice(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">P&amp;L</Label>
+              <Input value={amendPnl} onChange={(e) => setAmendPnl(e.target.value)} className="border-white/10 bg-black/50 text-white" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06]" onClick={() => setAmend(null)}>
+              Cancel
+            </Button>
+            <Button type="button" className="bg-teal-600 hover:bg-teal-500" onClick={submitAmend}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard label="Total trades" value={metrics.total.toLocaleString()} icon={LineChart} hint="All time (dataset)" />
@@ -148,7 +324,7 @@ export default function AdminTradesPage() {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-white/60 hover:bg-white/10"
-                      onClick={() => toast.message("Amend trade", { description: t.id })}
+                      onClick={() => openAmendDialog(t)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -156,7 +332,7 @@ export default function AdminTradesPage() {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-white/60 hover:bg-white/10"
-                      onClick={() => toast.message("Reconcile", { description: t.id })}
+                      onClick={() => reconcile(t.id)}
                     >
                       <CheckCircle2 className="h-4 w-4" />
                     </Button>
@@ -164,7 +340,7 @@ export default function AdminTradesPage() {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-rose-400/85 hover:bg-rose-500/10"
-                      onClick={() => toast.message("Cancel / void", { description: t.id })}
+                      onClick={() => voidTrade(t)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

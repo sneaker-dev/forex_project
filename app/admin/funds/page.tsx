@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useAdmin } from "@/components/admin/admin-provider"
 import {
   AdminPageHeader,
@@ -15,9 +16,59 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { downloadCsv } from "@/lib/admin/download"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function AdminFundsPage() {
-  const { state, setWithdrawalStatus, setDepositStatus } = useAdmin()
+  const { state, setWithdrawalStatus, setDepositStatus, appendLedger } = useAdmin()
+  const [adjOpen, setAdjOpen] = useState(false)
+  const [userId, setUserId] = useState(state.users[0]?.id ?? "")
+  const [amount, setAmount] = useState("")
+  const [note, setNote] = useState("")
+
+  const exportLedger = () => {
+    const headers = ["id", "userId", "userName", "type", "amount", "currency", "status", "reference", "createdAt"]
+    const rows = state.ledger.map((r) => [
+      r.id,
+      r.userId,
+      r.userName,
+      r.type,
+      r.amount,
+      r.currency,
+      r.status,
+      r.reference,
+      r.createdAt,
+    ])
+    downloadCsv(`ledger-reconcile-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows)
+    toast.success("Ledger export downloaded")
+  }
+
+  const postAdjustment = () => {
+    const u = state.users.find((x) => x.id === userId)
+    const amt = Number.parseFloat(amount)
+    if (!u || !Number.isFinite(amt) || !note.trim()) {
+      toast.error("Pick a client, enter amount, and a note.")
+      return
+    }
+    appendLedger({
+      userId: u.id,
+      userName: u.name,
+      type: "Adjustment",
+      amount: amt,
+      currency: "USD",
+      status: "Completed",
+      reference: note.trim().slice(0, 80),
+      createdAt: new Date().toISOString(),
+    })
+    toast.success("Adjustment posted to ledger")
+    setAdjOpen(false)
+    setAmount("")
+    setNote("")
+  }
 
   return (
     <div className="space-y-6">
@@ -26,15 +77,52 @@ export default function AdminFundsPage() {
         description="Deposit intake, withdrawal release, and immutable ledger — single operational pane."
         actions={
           <>
-            <AdminSecondaryButton onClick={() => toast.message("Reconciliation export", { description: "GL export (UI)." })}>
-              Reconcile
-            </AdminSecondaryButton>
-            <AdminPrimaryButton onClick={() => toast.message("Manual adjustment", { description: "Opens finance ticket." })}>
-              Post adjustment
-            </AdminPrimaryButton>
+            <AdminSecondaryButton onClick={exportLedger}>Reconcile</AdminSecondaryButton>
+            <AdminPrimaryButton onClick={() => setAdjOpen(true)}>Post adjustment</AdminPrimaryButton>
           </>
         }
       />
+
+      <Dialog open={adjOpen} onOpenChange={setAdjOpen}>
+        <DialogContent className="border-white/10 bg-slate-950 text-slate-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manual ledger adjustment</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-white/70">Client</Label>
+              <Select value={userId} onValueChange={setUserId}>
+                <SelectTrigger className="border-white/10 bg-black/50 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {state.users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Amount (USD, signed)</Label>
+              <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="-25.00" className="border-white/10 bg-black/50 text-white" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-white/70">Reference / note</Label>
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} className="min-h-[80px] border-white/10 bg-black/50 text-white" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" className="border-white/10 bg-white/[0.06]" onClick={() => setAdjOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" className="bg-teal-600 hover:bg-teal-500" onClick={postAdjustment}>
+              Post
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="deposits" className="space-y-4">
         <TabsList className={adminTabsListClass}>

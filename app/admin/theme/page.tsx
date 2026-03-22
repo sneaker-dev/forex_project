@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useAdmin } from "@/components/admin/admin-provider"
 import { AdminPageHeader, AdminPrimaryButton, adminSurface } from "@/components/admin/admin-ui"
@@ -9,10 +9,20 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import Image from "next/image"
+import type { ThemeSettings } from "@/lib/admin/types"
 
 export default function AdminThemePage() {
-  const { state } = useAdmin()
-  const [t, setT] = useState(state.theme)
+  const { state, updateTheme } = useAdmin()
+  const [t, setT] = useState<ThemeSettings>(state.theme)
+
+  useEffect(() => {
+    setT(state.theme)
+  }, [state.theme])
+
+  const publish = () => {
+    updateTheme(t)
+    toast.success("Theme published", { description: "Saved to admin workspace (local)." })
+  }
 
   return (
     <div className="space-y-6">
@@ -20,11 +30,7 @@ export default function AdminThemePage() {
         title="Client portal theme"
         description="Brand tokens applied to the trader-facing application shell."
         actions={
-          <AdminPrimaryButton
-            onClick={() => toast.success("Theme draft saved", { description: "Would propagate to edge config in production." })}
-          >
-            Publish draft
-          </AdminPrimaryButton>
+          <AdminPrimaryButton onClick={publish}>Publish draft</AdminPrimaryButton>
         }
       />
       <div className={cn(adminSurface, "grid gap-6 p-6 lg:grid-cols-2")}>
@@ -45,7 +51,10 @@ export default function AdminThemePage() {
           </div>
           <div className="space-y-2">
             <Label className="text-white/70">Density</Label>
-            <Select value={t.clientPortalDensity} onValueChange={(v) => setT({ ...t, clientPortalDensity: v as typeof t.clientPortalDensity })}>
+            <Select
+              value={t.clientPortalDensity}
+              onValueChange={(v) => setT({ ...t, clientPortalDensity: v as ThemeSettings["clientPortalDensity"] })}
+            >
               <SelectTrigger className="border-white/10 bg-black/50 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -54,6 +63,15 @@ export default function AdminThemePage() {
                 <SelectItem value="Compact">Compact</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white/70">Logo URL</Label>
+            <Input
+              value={t.logoUrl}
+              onChange={(e) => setT({ ...t, logoUrl: e.target.value })}
+              className="border-white/10 bg-black/50 text-white"
+              placeholder="/path-or-https://…"
+            />
           </div>
         </div>
         <div className="space-y-3">
