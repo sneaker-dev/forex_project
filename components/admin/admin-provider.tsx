@@ -5,11 +5,13 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react"
 import { ADMIN_SEED } from "@/lib/admin/seed"
+import { normalizeAdminState } from "@/lib/admin/normalize-state"
 import type {
   AdminState,
   AdminTrade,
@@ -26,6 +28,25 @@ import type {
 
 const STORAGE_KEY = "forexpro-admin-crm-v3"
 
+/** Keep KYC queue rows aligned when profile KYC is updated from the registry or activation */
+function syncKycItemsFromProfileKyc(
+  items: KycItem[],
+  userId: string,
+  kyc: AdminUser["kyc"]
+): KycItem[] {
+  return items.map((k) => {
+    if (k.userId !== userId) return k
+    if (k.status === "Approved" || k.status === "Rejected") return k
+    if (kyc === "Verified") return { ...k, status: "Approved" }
+    if (kyc === "Rejected") return { ...k, status: "Rejected" }
+    if (kyc === "Pending") {
+      if (k.status === "Queued") return { ...k, status: "In Review" }
+      return k
+    }
+    return k
+  })
+}
+
 type AdminContextValue = {
   state: AdminState
   hydrated: boolean
@@ -37,6 +58,7 @@ type AdminContextValue = {
   setWithdrawalStatus: (id: string, status: WithdrawalRequest["status"]) => void
   setDepositStatus: (id: string, status: DepositRequest["status"]) => void
   setUserStatus: (id: string, status: UserStatus) => void
+  setUserKyc: (id: string, kyc: AdminUser["kyc"]) => void
   appendLedger: (entry: Omit<LedgerEntry, "id"> & { id?: string }) => void
   toggleCopyLink: (id: string, active: boolean) => void
   setMasterStatus: (id: string, status: AdminState["copyMasters"][0]["status"]) => void
@@ -60,9 +82,9 @@ function load(): AdminState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return ADMIN_SEED
-    const parsed = JSON.parse(raw) as AdminState
+    const parsed = JSON.parse(raw) as Partial<AdminState>
     if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.users)) return ADMIN_SEED
-    return parsed
+    return normalizeAdminState(parsed)
   } catch {
     return ADMIN_SEED
   }
@@ -72,7 +94,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AdminState>(ADMIN_SEED)
   const [hydrated, setHydrated] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setState(load())
     setHydrated(true)
   }, [])
@@ -154,11 +176,40 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const setUserStatus = useCallback(
     (id: string, status: UserStatus) => {
+      let activatedKyc = false
+      setState((s) => {
+        const user = s.users.find((u) => u.id === id)
+        if (!user) return s
+        activatedKyc = status === "Active" && user.kyc === "Pending"
+        const users = s.users.map((u) => {
+          if (u.id !== id) return u
+          if (activatedKyc) return { ...u, status, kyc: "Verified" as const }
+          return { ...u, status }
+        })
+        const kycItems = activatedKyc ? syncKycItemsFromProfileKyc(s.kycItems, id, "Verified") : s.kycItems
+        return { ...s, users, kycItems }
+      })
+      logActivity(`User ${status}`, id, "Admin", status === "Suspended" ? "warning" : "info")
+      if (activatedKyc) {
+        logActivity("KYC marked Verified (account activation)", id, "Compliance", "success")
+      }
+    },
+    [logActivity]
+  )
+
+  const setUserKyc = useCallback(
+    (id: string, kyc: AdminUser["kyc"]) => {
       setState((s) => ({
         ...s,
-        users: s.users.map((u) => (u.id === id ? { ...u, status } : u)),
+        users: s.users.map((u) => (u.id === id ? { ...u, kyc } : u)),
+        kycItems: syncKycItemsFromProfileKyc(s.kycItems, id, kyc),
       }))
-      logActivity(`User ${status}`, id, "Admin", status === "Suspended" ? "warning" : "info")
+      logActivity(
+        `Profile KYC set to ${kyc}`,
+        id,
+        "Compliance",
+        kyc === "Verified" ? "success" : kyc === "Rejected" ? "danger" : "info"
+      )
     },
     [logActivity]
   )
@@ -217,10 +268,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const updateUser = useCallback(
     (id: string, patch: Partial<AdminUser>) => {
-      setState((s) => ({
-        ...s,
-        users: s.users.map((x) => (x.id === id ? { ...x, ...patch } : x)),
-      }))
+      setState((s) => {
+        const nextUsers = s.users.map((x) => (x.id === id ? { ...x, ...patch } : x))
+        const kycItems =
+          patch.kyc !== undefined ? syncKycItemsFromProfileKyc(s.kycItems, id, patch.kyc) : s.kycItems
+        return { ...s, users: nextUsers, kycItems }
+      })
       logActivity("Client profile updated", id, "Admin", "info")
     },
     [logActivity]
@@ -308,6 +361,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setWithdrawalStatus,
       setDepositStatus,
       setUserStatus,
+      setUserKyc,
       appendLedger,
       toggleCopyLink,
       setMasterStatus,
@@ -333,6 +387,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setWithdrawalStatus,
       setDepositStatus,
       setUserStatus,
+      setUserKyc,
       appendLedger,
       toggleCopyLink,
       setMasterStatus,

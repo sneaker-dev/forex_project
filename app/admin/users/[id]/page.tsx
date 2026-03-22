@@ -15,6 +15,17 @@ import { ArrowLeft, Copy } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { AdminPageHeader, AdminPrimaryButton, adminSurface, adminTabsListClass, adminTabsTriggerClass } from "@/components/admin/admin-ui"
+import {
+  AffiliatePanel,
+  BankAccountsPanel,
+  DocumentsPanel,
+  LogsPanel,
+  SecurityPanel,
+  SupportTicketsMini,
+  TradingAccountsPanel,
+  TransactionsPanel,
+  WalletsPanel,
+} from "@/components/admin/client-workspace-panels"
 import { cn } from "@/lib/utils"
 
 export default function AdminUserDetailPage() {
@@ -106,19 +117,19 @@ export default function AdminUserDetailPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className={cn(adminSurface, "p-4")}>
-          <p className="text-xs font-medium uppercase tracking-wider text-white/45">Equity (USD)</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-white">
+        <div className="admin-metric-tile p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Equity (USD)</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-slate-50">
             ${user.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
         </div>
-        <div className={cn(adminSurface, "p-4")}>
-          <p className="text-xs font-medium uppercase tracking-wider text-white/45">Tier</p>
-          <p className="mt-1 text-2xl font-semibold text-white">{user.tier}</p>
+        <div className="admin-metric-tile p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Tier</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-50">{user.tier}</p>
         </div>
-        <div className={cn(adminSurface, "p-4")}>
-          <p className="text-xs font-medium uppercase tracking-wider text-white/45">Last activity</p>
-          <p className="mt-1 text-lg font-medium text-white/90">{user.lastActive}</p>
+        <div className="admin-metric-tile p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Last activity</p>
+          <p className="mt-1 text-lg font-medium text-slate-200">{user.lastActive}</p>
         </div>
       </div>
 
@@ -257,23 +268,36 @@ export default function AdminUserDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="mt-6 space-y-6">
+            <SupportTicketsMini user={user} tickets={state.tickets} />
+          </div>
         </TabsContent>
 
-        {(["banks", "documents", "trading", "wallets", "transactions", "logs", "security", "affiliate"] as const).map(
-          (tab) => (
-            <TabsContent key={tab} value={tab}>
-              <Card className={cn(adminSurface, "border-0 text-slate-100 shadow-none")}>
-                <CardHeader>
-                  <CardTitle className="capitalize text-slate-100">{tab.replace("-", " ")}</CardTitle>
-                  <CardDescription className="text-slate-500">Operational records for this client</CardDescription>
-                </CardHeader>
-                <CardContent className="text-sm text-slate-500">
-                  Connect your ledger and document store to render statements, statements of account, and audit exports here.
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )
-        )}
+        <TabsContent value="banks">
+          <BankAccountsPanel user={user} />
+        </TabsContent>
+        <TabsContent value="documents">
+          <DocumentsPanel user={user} state={state} />
+        </TabsContent>
+        <TabsContent value="trading">
+          <TradingAccountsPanel user={user} state={state} />
+        </TabsContent>
+        <TabsContent value="wallets">
+          <WalletsPanel user={user} />
+        </TabsContent>
+        <TabsContent value="transactions">
+          <TransactionsPanel user={user} state={state} />
+        </TabsContent>
+        <TabsContent value="logs">
+          <LogsPanel user={user} state={state} />
+        </TabsContent>
+        <TabsContent value="security">
+          <SecurityPanel user={user} />
+        </TabsContent>
+        <TabsContent value="affiliate">
+          <AffiliatePanel user={user} />
+        </TabsContent>
 
         <TabsContent value="copy">
           <Card className={cn(adminSurface, "border-0 text-slate-100 shadow-none")}>

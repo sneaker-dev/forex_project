@@ -1,17 +1,97 @@
-/* Admin CRM — proprietary visual language (distinct from reference screenshots) */
+/* ForexPro Command — CRM visual language */
 .admin-scope {
-  --admin-fg: #e2e8f0;
-  --admin-fg-muted: #94a3b8;
-  --admin-surface: rgba(15, 23, 42, 0.55);
-  --admin-surface-elevated: rgba(30, 41, 59, 0.45);
-  --admin-border: rgba(148, 163, 184, 0.12);
+  --admin-fg: #e8edf5;
+  --admin-fg-muted: #8b9cb3;
+  --admin-surface: rgba(15, 23, 42, 0.52);
+  --admin-surface-elevated: rgba(30, 41, 59, 0.42);
+  --admin-border: rgba(148, 163, 184, 0.1);
+  --admin-border-strong: rgba(148, 163, 184, 0.14);
   --admin-accent: #2dd4bf;
-  --admin-accent-dim: rgba(45, 212, 191, 0.14);
-  --admin-glow: rgba(34, 211, 238, 0.08);
+  --admin-accent-muted: rgba(45, 212, 191, 0.12);
+  --admin-accent-glow: rgba(34, 211, 238, 0.09);
+  --admin-ink: #030712;
   color-scheme: dark;
+  font-feature-settings: "tnum" 1, "lnum" 1, "ss01" 1;
 }
 
 .admin-scope ::selection {
-  background: rgba(45, 212, 191, 0.25);
+  background: rgba(45, 212, 191, 0.28);
   color: #f8fafc;
+}
+
+/* Film grain — ultra subtle depth */
+.admin-scope .admin-atmosphere-noise {
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Edge vignette */
+.admin-scope .admin-atmosphere-vignette {
+  pointer-events: none;
+  background: radial-gradient(ellipse 85% 65% at 50% 0%, transparent 40%, rgba(3, 7, 18, 0.55) 100%);
+}
+
+/* Page title accent */
+.admin-scope .admin-hero-accent {
+  height: 2px;
+  width: 3rem;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(45, 212, 191, 0.85), rgba(34, 211, 238, 0.15), transparent);
+}
+
+/* Table frame — used inside cards */
+.admin-scope .admin-table-wrap {
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 48%);
+  overflow: hidden;
+}
+
+.admin-scope .admin-table-wrap table {
+  width: 100%;
+}
+
+.admin-scope .admin-table-wrap thead tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-scope .admin-table-wrap th {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.88);
+}
+
+.admin-scope .admin-table-wrap tbody tr {
+  border-color: rgba(255, 255, 255, 0.04);
+  transition: background-color 0.15s ease;
+}
+
+.admin-scope .admin-table-wrap tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* Metric tile — client workspace */
+.admin-scope .admin-metric-tile {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(165deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.38) 100%);
+  box-shadow:
+    0 0 0 1px rgba(45, 212, 191, 0.05),
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 28px 56px -32px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-scope *,
+  .admin-scope *::before,
+  .admin-scope *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

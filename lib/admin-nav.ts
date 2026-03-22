@@ -91,29 +91,29 @@ export const adminLogoutItem = { name: "Sign out", href: "/login", icon: LogOut 
 
 export function adminTitleFromPath(pathname: string): { title: string; subtitle: string } {
   const map: Record<string, { title: string; subtitle: string }> = {
-    "/admin": { title: "Overview", subtitle: "Operational pulse, liquidity, and risk signals." },
-    "/admin/users": { title: "Clients", subtitle: "Registry, tiers, and lifecycle controls." },
-    "/admin/trades": { title: "Trades", subtitle: "Execution surveillance across accounts." },
-    "/admin/funds": { title: "Treasury", subtitle: "Deposits, withdrawals, and ledger." },
-    "/admin/bank-settings": { title: "Bank rails", subtitle: "Settlement paths and cut-off times." },
-    "/admin/ib": { title: "IB network", subtitle: "Hierarchy, volume, and commission." },
-    "/admin/forex-charges": { title: "Forex charges", subtitle: "Symbol economics and swap curves." },
-    "/admin/earnings": { title: "Earnings", subtitle: "Revenue attribution and partner share." },
-    "/admin/copy-trading": { title: "Copy trading", subtitle: "Masters, followers, and fee policy." },
-    "/admin/prop-firm": { title: "Prop challenges", subtitle: "Rules, phases, and funded stages." },
-    "/admin/account-types": { title: "Account types", subtitle: "Product packaging and leverage." },
-    "/admin/theme": { title: "Branding", subtitle: "Client portal tokens and density." },
-    "/admin/banners": { title: "Banners", subtitle: "Campaign slots and scheduling." },
-    "/admin/competitions": { title: "Competitions", subtitle: "Seasons, prizes, eligibility." },
-    "/admin/email": { title: "Email", subtitle: "Transactional + lifecycle templates." },
-    "/admin/oxapay": { title: "Oxapay", subtitle: "Crypto gateway health and secrets." },
-    "/admin/admins": { title: "Staff access", subtitle: "Roles, MFA, and privileged actions." },
-    "/admin/kyc": { title: "KYC", subtitle: "Document queue and risk decisions." },
-    "/admin/support": { title: "Support", subtitle: "Tickets, SLAs, ownership." },
+    "/admin": { title: "Overview", subtitle: "Operational pulse — liquidity, exposure, and risk in one glance." },
+    "/admin/users": { title: "Clients", subtitle: "Lifecycle, tiers, and KYC — each field persists to the workspace." },
+    "/admin/trades": { title: "Trades", subtitle: "Execution surveillance and symbol-level forensics." },
+    "/admin/funds": { title: "Treasury", subtitle: "Deposits, withdrawals, and ledger with full traceability." },
+    "/admin/bank-settings": { title: "Bank rails", subtitle: "Settlement paths, correspondent banks, and cut-offs." },
+    "/admin/ib": { title: "IB network", subtitle: "Hierarchy, volume curves, and commission economics." },
+    "/admin/forex-charges": { title: "Forex charges", subtitle: "Symbol economics, spreads, and swap curves." },
+    "/admin/earnings": { title: "Earnings", subtitle: "Revenue attribution, partner share, and accruals." },
+    "/admin/copy-trading": { title: "Copy trading", subtitle: "Masters, followers, allocation, and fee policy." },
+    "/admin/prop-firm": { title: "Prop challenges", subtitle: "Rules, evaluation phases, and funded milestones." },
+    "/admin/account-types": { title: "Account types", subtitle: "Product packaging, leverage, and entitlements." },
+    "/admin/theme": { title: "Branding", subtitle: "Portal tokens, typography, and visual density." },
+    "/admin/banners": { title: "Banners", subtitle: "Campaign slots, scheduling, and audience targeting." },
+    "/admin/competitions": { title: "Competitions", subtitle: "Seasons, prizes, eligibility, and leaderboards." },
+    "/admin/email": { title: "Email", subtitle: "Transactional sends and lifecycle nurture templates." },
+    "/admin/oxapay": { title: "Oxapay", subtitle: "Crypto gateway posture, health, and credential scope." },
+    "/admin/admins": { title: "Staff access", subtitle: "Roles, MFA, session policy, and privileged actions." },
+    "/admin/kyc": { title: "KYC", subtitle: "Document queue, risk decisions, and audit trail." },
+    "/admin/support": { title: "Support", subtitle: "Tickets, SLAs, ownership, and resolution quality." },
   }
   if (map[pathname]) return map[pathname]
   if (pathname.startsWith("/admin/users/")) {
-    return { title: "Client workspace", subtitle: "Profile, accounts, and activity." }
+    return { title: "Client workspace", subtitle: "Profile, accounts, treasury, and activity — unified." }
   }
-  return { title: "Admin", subtitle: "Control center" }
+  return { title: "Admin", subtitle: "Control center for the ForexPro desk." }
 }

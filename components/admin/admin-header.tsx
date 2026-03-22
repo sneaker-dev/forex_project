@@ -64,11 +64,11 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           <Menu className="h-5 w-5" />
         </Button>
         <div className="min-w-0 flex-1 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-teal-500/90">ForexPro command</p>
-          <h1 className="truncate bg-gradient-to-r from-slate-100 via-slate-200 to-slate-400 bg-clip-text text-xl font-semibold tracking-tight text-transparent">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-teal-400/80">ForexPro · command</p>
+          <h1 className="truncate bg-gradient-to-r from-slate-50 via-slate-200 to-slate-500 bg-clip-text text-xl font-semibold tracking-tight text-transparent drop-shadow-[0_0_24px_rgba(45,212,191,0.08)]">
             {title}
           </h1>
-          <p className="truncate text-xs text-slate-500">{subtitle}</p>
+          <p className="truncate text-xs leading-relaxed text-slate-500 [text-wrap:balance]">{subtitle}</p>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           <Input
             readOnly
             placeholder="Search registry, tickets, executions…"
-            className="h-10 rounded-xl border-white/10 bg-slate-900/60 pl-10 text-sm text-slate-200 placeholder:text-slate-600 focus-visible:ring-teal-500/30"
+            className="h-10 cursor-default rounded-xl border-white/10 bg-slate-900/55 pl-10 text-sm text-slate-200 shadow-inner shadow-black/20 placeholder:text-slate-600 focus-visible:border-teal-500/25 focus-visible:ring-2 focus-visible:ring-teal-500/20"
           />
         </div>
         <div className="hidden items-center gap-3 rounded-full border border-white/[0.06] bg-slate-900/50 px-4 py-2 text-[11px] text-slate-500 lg:flex">
@@ -93,6 +93,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           </span>
         </div>
         <div
+          title="CRM state saved in this browser (localStorage)"
           className={cn(
             "flex items-center gap-2 rounded-full border border-teal-500/25 bg-teal-500/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-teal-200/95"
           )}

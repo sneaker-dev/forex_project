@@ -54,6 +54,8 @@ export function AdminShell({ children }: AdminShellProps) {
           backgroundSize: "48px 48px",
         }}
       />
+      <div className="admin-atmosphere-noise pointer-events-none fixed inset-0 z-0" aria-hidden />
+      <div className="admin-atmosphere-vignette pointer-events-none fixed inset-0 z-0" aria-hidden />
 
       <div className="hidden lg:block">
         <AdminSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} />
@@ -78,7 +80,7 @@ export function AdminShell({ children }: AdminShellProps) {
         )}
       >
         <AdminHeader onMenuClick={() => setMobileMenuOpen(true)} />
-        <main className="mx-auto max-w-[1580px] px-4 py-8 lg:px-10">{children}</main>
+        <main className="mx-auto max-w-[1580px] px-4 py-9 lg:px-10 lg:py-10">{children}</main>
       </div>
     </div>
   )

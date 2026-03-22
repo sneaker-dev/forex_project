@@ -9,7 +9,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Download, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAdmin } from "@/components/admin/admin-provider"
-import { AdminPageHeader, AdminPrimaryButton, AdminSecondaryButton, AdminToolbar, adminSurface } from "@/components/admin/admin-ui"
+import {
+  AdminPageHeader,
+  AdminPrimaryButton,
+  AdminSecondaryButton,
+  AdminToolbar,
+  adminSurface,
+  adminTableWrap,
+} from "@/components/admin/admin-ui"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -17,10 +24,12 @@ import { Label } from "@/components/ui/label"
 import { downloadCsv } from "@/lib/admin/download"
 import type { AdminUser, UserStatus } from "@/lib/admin/types"
 
+const KYC_OPTIONS: AdminUser["kyc"][] = ["None", "Pending", "Verified", "Rejected"]
+
 const PAGE_SIZE = 8
 
 export default function AdminUsersPage() {
-  const { state, setUserStatus, addUser } = useAdmin()
+  const { state, setUserStatus, setUserKyc, addUser, hydrated } = useAdmin()
   const [q, setQ] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [page, setPage] = useState(0)
@@ -95,7 +104,7 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Client registry"
-        description="Authoritative list of trading profiles, tiers, and verification posture."
+        description="Account lifecycle (trading access) and KYC verification are separate — both persist to the workspace."
         actions={
           <>
             <AdminSecondaryButton onClick={exportCsv}>
@@ -200,15 +209,17 @@ export default function AdminUsersPage() {
       </Dialog>
 
       <div className={cn(adminSurface, "overflow-hidden")}>
+        <div className="overflow-x-auto">
+          <div className={adminTableWrap}>
         <Table>
           <TableHeader>
-            <TableRow className="border-white/[0.08] hover:bg-transparent">
+            <TableRow className="border-transparent hover:bg-transparent">
               <TableHead className="text-slate-500">Client</TableHead>
               <TableHead className="text-slate-500">Country</TableHead>
               <TableHead className="text-slate-500">Tier</TableHead>
-              <TableHead className="text-slate-500">KYC</TableHead>
+              <TableHead className="text-slate-500 min-w-[140px]">KYC</TableHead>
               <TableHead className="text-right text-slate-500">Balance</TableHead>
-              <TableHead className="text-slate-500">Status</TableHead>
+              <TableHead className="text-slate-500 min-w-[130px]">Account</TableHead>
               <TableHead className="text-right text-slate-500">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -229,26 +240,46 @@ export default function AdminUsersPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      u.kyc === "Verified" && "text-emerald-400",
-                      u.kyc === "Pending" && "text-amber-300",
-                      u.kyc === "Rejected" && "text-red-400"
-                    )}
+                  <Select
+                    key={`kyc-${u.id}-${u.kyc}`}
+                    value={u.kyc}
+                    disabled={!hydrated}
+                    onValueChange={(v) => {
+                      setUserKyc(u.id, v as AdminUser["kyc"])
+                      toast.success(`KYC set to ${v}`)
+                    }}
                   >
-                    {u.kyc}
-                  </span>
+                    <SelectTrigger className="h-8 w-[138px] border-white/10 bg-black/50 text-xs text-white disabled:opacity-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {KYC_OPTIONS.map((k) => (
+                        <SelectItem key={k} value={k}>
+                          {k}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums text-white/90">
                   ${u.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </TableCell>
                 <TableCell>
                   <Select
+                    key={`acct-${u.id}-${u.status}`}
                     value={u.status}
-                    onValueChange={(v) => setUserStatus(u.id, v as UserStatus)}
+                    disabled={!hydrated}
+                    onValueChange={(v) => {
+                      const next = v as UserStatus
+                      setUserStatus(u.id, next)
+                      if (next === "Active" && u.kyc === "Pending") {
+                        toast.success("Account active — KYC marked Verified")
+                      } else {
+                        toast.success(`Account set to ${next}`)
+                      }
+                    }}
                   >
-                    <SelectTrigger className="h-8 w-[130px] border-white/10 bg-black/50 text-xs text-white">
+                    <SelectTrigger className="h-8 w-[130px] border-white/10 bg-black/50 text-xs text-white disabled:opacity-50">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -268,6 +299,8 @@ export default function AdminUsersPage() {
             ))}
           </TableBody>
         </Table>
+          </div>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-3 text-xs text-white/45">
           <span>
             Showing {slice.length ? pageSafe * PAGE_SIZE + 1 : 0}–{pageSafe * PAGE_SIZE + slice.length} of {filtered.length}
