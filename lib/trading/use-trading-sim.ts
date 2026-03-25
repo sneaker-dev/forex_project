@@ -9,6 +9,8 @@ export type AlertCondition = "above" | "below"
 export interface MarketQuote {
   symbol: string
   open: number
+  high: number
+  low: number
   last: number
   bid: number
   ask: number
@@ -108,7 +110,7 @@ const DEFAULT_STATE: TradingState = {
 function createQuote(symbol: string, last: number, spread: number): MarketQuote {
   const bid = Number((last - spread / 2).toFixed(getPriceDecimals(symbol)))
   const ask = Number((last + spread / 2).toFixed(getPriceDecimals(symbol)))
-  return { symbol, open: last, last, bid, ask, spread, changePercent: 0 }
+  return { symbol, open: last, high: last, low: last, last, bid, ask, spread, changePercent: 0 }
 }
 
 function getPriceDecimals(symbol: string) {
@@ -159,6 +161,8 @@ function simulateQuotes(prevQuotes: TradingState["quotes"]) {
       last: nextLast,
       bid: nextBid,
       ask: nextAsk,
+      high: Math.max(quote.high, nextLast),
+      low: Math.min(quote.low, nextLast),
       changePercent: Number(changePercent.toFixed(2)),
     }
   }

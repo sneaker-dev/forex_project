@@ -13,11 +13,17 @@ import {
 import { ADMIN_SEED } from "@/lib/admin/seed"
 import { normalizeAdminState } from "@/lib/admin/normalize-state"
 import type {
+  AbBookTransfer,
   AdminState,
   AdminTrade,
   AdminUser,
+  CompetitionAdmin,
   CopyMaster,
+  CopyMasterApproval,
+  EmailTemplate,
+  IbNode,
   KycItem,
+  Lead,
   LedgerEntry,
   SupportTicket,
   ThemeSettings,
@@ -69,7 +75,20 @@ type AdminContextValue = {
   addTrade: (t: Omit<AdminTrade, "id">) => void
   updateTrade: (id: string, patch: Partial<AdminTrade>) => void
   removeTrade: (id: string) => void
-  addCopyMaster: (m: Omit<CopyMaster, "id">) => void
+  addCopyMaster: (m: Partial<Omit<CopyMaster, "id">> & Pick<CopyMaster, "name" | "strategy" | "feePct">) => void
+  updateCopyMaster: (id: string, patch: Partial<CopyMaster>) => void
+  setCopySystemPaused: (paused: boolean) => void
+  setMasterApproval: (id: string, status: CopyMasterApproval) => void
+  setMasterFollowersPaused: (id: string, paused: boolean) => void
+  stopAllCopyFollowers: () => void
+  updateIbNode: (id: string, patch: Partial<IbNode>) => void
+  addIbNode: (n: Omit<IbNode, "id">) => void
+  updateEmailTemplate: (id: string, patch: Partial<EmailTemplate>) => void
+  addCompetition: (c: Omit<CompetitionAdmin, "id">) => void
+  updateCompetition: (id: string, patch: Partial<CompetitionAdmin>) => void
+  addLead: (l: Omit<Lead, "id" | "createdAt"> & { createdAt?: string }) => void
+  updateLead: (id: string, patch: Partial<Lead>) => void
+  addAbBookTransfer: (t: Omit<AbBookTransfer, "id" | "createdAt">) => void
   updateTheme: (patch: Partial<ThemeSettings>) => void
   testOxapayConnection: () => void
   bulkKycToReview: () => void
@@ -119,7 +138,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const logActivity = useCallback(
     (action: string, target: string, actor = "You", severity: AdminState["activity"][0]["severity"] = "info") => {
-      const id = `a-${Date.now()}`
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? `a-${crypto.randomUUID()}`
+          : `a-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
       const at = new Date().toISOString()
       setState((s) => ({
         ...s,
@@ -313,14 +335,196 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     [logActivity]
   )
 
+  const defaultCopyMasterFields = (): Pick<
+    CopyMaster,
+    | "followers"
+    | "aum"
+    | "winRate"
+    | "approvalStatus"
+    | "minWinRatePct"
+    | "minTrackRecordMonths"
+    | "profitSharePct"
+    | "followersPaused"
+    | "pendingPayoutUsd"
+    | "paidOutUsd"
+    | "pnl30dUsd"
+    | "equityHistory"
+    | "performanceHistory"
+  > => ({
+    followers: 0,
+    aum: 0,
+    winRate: 0,
+    approvalStatus: "Pending",
+    minWinRatePct: 55,
+    minTrackRecordMonths: 3,
+    profitSharePct: 70,
+    followersPaused: false,
+    pendingPayoutUsd: 0,
+    paidOutUsd: 0,
+    pnl30dUsd: 0,
+    equityHistory: [0.5, 0.51, 0.5, 0.52, 0.53, 0.52, 0.54, 0.55, 0.56, 0.55, 0.57, 0.58],
+    performanceHistory: [],
+  })
+
   const addCopyMaster = useCallback(
-    (m: Omit<CopyMaster, "id">) => {
+    (m: Partial<Omit<CopyMaster, "id">> & Pick<CopyMaster, "name" | "strategy" | "feePct">) => {
       const id = `M-${Date.now().toString(36).toUpperCase()}`
+      const row: CopyMaster = {
+        ...defaultCopyMasterFields(),
+        ...m,
+        id,
+        status: m.status ?? "Active",
+      }
       setState((s) => ({
         ...s,
-        copyMasters: [{ ...m, id }, ...s.copyMasters],
+        copyMasters: [row, ...s.copyMasters],
       }))
       logActivity("Master onboarded", id, "Copy Desk", "success")
+    },
+    [logActivity]
+  )
+
+  const updateCopyMaster = useCallback(
+    (id: string, patch: Partial<CopyMaster>) => {
+      setState((s) => ({
+        ...s,
+        copyMasters: s.copyMasters.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+      }))
+      logActivity("Master updated", id, "Copy Desk", "info")
+    },
+    [logActivity]
+  )
+
+  const setCopySystemPaused = useCallback(
+    (paused: boolean) => {
+      setState((s) => ({ ...s, copySystemPaused: paused }))
+      logActivity(paused ? "Copy system PAUSED globally" : "Copy system resumed", "copy", "Risk", "warning")
+    },
+    [logActivity]
+  )
+
+  const setMasterApproval = useCallback(
+    (id: string, status: CopyMasterApproval) => {
+      setState((s) => ({
+        ...s,
+        copyMasters: s.copyMasters.map((m) => (m.id === id ? { ...m, approvalStatus: status } : m)),
+      }))
+      logActivity(`Master approval ${status}`, id, "Copy Desk", status === "Rejected" ? "danger" : "success")
+    },
+    [logActivity]
+  )
+
+  const setMasterFollowersPaused = useCallback(
+    (id: string, paused: boolean) => {
+      setState((s) => ({
+        ...s,
+        copyMasters: s.copyMasters.map((m) => (m.id === id ? { ...m, followersPaused: paused } : m)),
+      }))
+      logActivity(paused ? "Master followers paused" : "Master followers resumed", id, "Copy Desk", "warning")
+    },
+    [logActivity]
+  )
+
+  const stopAllCopyFollowers = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      copyLinks: s.copyLinks.map((l) => ({ ...l, active: false })),
+    }))
+    logActivity("STOP ALL followers — all links disabled", "copy", "Risk", "danger")
+  }, [logActivity])
+
+  const updateIbNode = useCallback(
+    (id: string, patch: Partial<IbNode>) => {
+      setState((s) => ({
+        ...s,
+        ibNodes: s.ibNodes.map((n) => (n.id === id ? { ...n, ...patch } : n)),
+      }))
+      logActivity("IB profile updated", id, "Partners", "info")
+    },
+    [logActivity]
+  )
+
+  const addIbNode = useCallback(
+    (n: Omit<IbNode, "id">) => {
+      const id = `ib-${Date.now().toString(36)}`
+      setState((s) => ({
+        ...s,
+        ibNodes: [{ ...n, id }, ...s.ibNodes],
+      }))
+      logActivity("IB onboarded", id, "Partners", "success")
+    },
+    [logActivity]
+  )
+
+  const updateEmailTemplate = useCallback(
+    (id: string, patch: Partial<EmailTemplate>) => {
+      setState((s) => ({
+        ...s,
+        emailTemplates: s.emailTemplates.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+      }))
+      logActivity("Email template saved", id, "Marketing", "info")
+    },
+    [logActivity]
+  )
+
+  const addCompetition = useCallback(
+    (c: Omit<CompetitionAdmin, "id">) => {
+      const id = `C-${Date.now().toString(36).toUpperCase()}`
+      setState((s) => ({
+        ...s,
+        competitions: [{ ...c, id }, ...s.competitions],
+      }))
+      logActivity("Competition created", id, "Growth", "success")
+    },
+    [logActivity]
+  )
+
+  const updateCompetition = useCallback(
+    (id: string, patch: Partial<CompetitionAdmin>) => {
+      setState((s) => ({
+        ...s,
+        competitions: s.competitions.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+      }))
+      logActivity("Competition updated", id, "Growth", "info")
+    },
+    [logActivity]
+  )
+
+  const addLead = useCallback(
+    (l: Omit<Lead, "id" | "createdAt"> & { createdAt?: string }) => {
+      const id = `LD-${Date.now().toString(36).toUpperCase()}`
+      const createdAt = l.createdAt ?? new Date().toISOString()
+      const { createdAt: _drop, ...fields } = l
+      const row: Lead = { ...fields, id, createdAt }
+      setState((s) => ({
+        ...s,
+        leads: [row, ...s.leads],
+      }))
+      logActivity("Lead captured", id, "Sales", "success")
+    },
+    [logActivity]
+  )
+
+  const updateLead = useCallback(
+    (id: string, patch: Partial<Lead>) => {
+      setState((s) => ({
+        ...s,
+        leads: s.leads.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+      }))
+      logActivity("Lead updated", id, "Sales", "info")
+    },
+    [logActivity]
+  )
+
+  const addAbBookTransfer = useCallback(
+    (t: Omit<AbBookTransfer, "id" | "createdAt">) => {
+      const id = `AB-${Date.now().toString(36).toUpperCase()}`
+      const createdAt = new Date().toISOString()
+      setState((s) => ({
+        ...s,
+        abBookTransfers: [{ ...t, id, createdAt }, ...s.abBookTransfers],
+      }))
+      logActivity(`Book transfer ${t.previousBook}→${t.nextBook}`, id, "Risk", "warning")
     },
     [logActivity]
   )
@@ -373,6 +577,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       updateTrade,
       removeTrade,
       addCopyMaster,
+      updateCopyMaster,
+      setCopySystemPaused,
+      setMasterApproval,
+      setMasterFollowersPaused,
+      stopAllCopyFollowers,
+      updateIbNode,
+      addIbNode,
+      updateEmailTemplate,
+      addCompetition,
+      updateCompetition,
+      addLead,
+      updateLead,
+      addAbBookTransfer,
       updateTheme,
       testOxapayConnection,
       bulkKycToReview,
@@ -399,6 +616,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       updateTrade,
       removeTrade,
       addCopyMaster,
+      updateCopyMaster,
+      setCopySystemPaused,
+      setMasterApproval,
+      setMasterFollowersPaused,
+      stopAllCopyFollowers,
+      updateIbNode,
+      addIbNode,
+      updateEmailTemplate,
+      addCompetition,
+      updateCompetition,
+      addLead,
+      updateLead,
+      addAbBookTransfer,
       updateTheme,
       testOxapayConnection,
       bulkKycToReview,

@@ -20,6 +20,8 @@ import {
   BadgeCheck,
   Headphones,
   LogOut,
+  UserPlus,
+  ArrowLeftRight,
 } from "lucide-react"
 
 export type AdminNavItem = {
@@ -49,6 +51,8 @@ export const adminNavSections: AdminNavSection[] = [
       { name: "Trades", href: "/admin/trades", icon: LineChart },
       { name: "Treasury", href: "/admin/funds", icon: Wallet },
       { name: "Bank rails", href: "/admin/bank-settings", icon: Landmark },
+      { name: "Leads", href: "/admin/leads", icon: UserPlus },
+      { name: "A/B book", href: "/admin/book-transfer", icon: ArrowLeftRight },
     ],
   },
   {
@@ -110,6 +114,8 @@ export function adminTitleFromPath(pathname: string): { title: string; subtitle:
     "/admin/admins": { title: "Staff access", subtitle: "Roles, MFA, session policy, and privileged actions." },
     "/admin/kyc": { title: "KYC", subtitle: "Document queue, risk decisions, and audit trail." },
     "/admin/support": { title: "Support", subtitle: "Tickets, SLAs, ownership, and resolution quality." },
+    "/admin/leads": { title: "Leads", subtitle: "Pipeline, assignment, conversion, and follow-ups." },
+    "/admin/book-transfer": { title: "A/B book", subtitle: "Internalize vs hedge transfers with audit trail." },
   }
   if (map[pathname]) return map[pathname]
   if (pathname.startsWith("/admin/users/")) {

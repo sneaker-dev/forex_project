@@ -71,12 +71,16 @@ export type LedgerEntry = {
   createdAt: string
 }
 
+/** Treasury rail for deposits / withdrawals (filter tabs) */
+export type TreasuryRail = "UPI" | "Crypto" | "Bank"
+
 export type WithdrawalRequest = {
   id: string
   userId: Id
   userName: string
   amount: number
   method: string
+  rail: TreasuryRail
   status: "Pending" | "Approved" | "Rejected" | "Paid"
   requestedAt: string
 }
@@ -87,8 +91,21 @@ export type DepositRequest = {
   userName: string
   amount: number
   method: string
+  rail: TreasuryRail
   status: "Pending" | "Credited" | "Failed"
   requestedAt: string
+}
+
+export type CopyMasterApproval = "Pending" | "Approved" | "Rejected"
+
+/** Recent closed-book snapshots for master performance tab */
+export type CopyMasterHistoryRow = {
+  id: string
+  at: string
+  symbol: string
+  side: "BUY" | "SELL"
+  lots: number
+  pnlUsd: number
 }
 
 export type CopyMaster = {
@@ -100,6 +117,17 @@ export type CopyMaster = {
   status: "Active" | "Paused" | "Suspended"
   aum: number
   winRate: number
+  approvalStatus: CopyMasterApproval
+  minWinRatePct: number
+  minTrackRecordMonths: number
+  profitSharePct: number
+  followersPaused: boolean
+  pendingPayoutUsd: number
+  paidOutUsd: number
+  pnl30dUsd: number
+  /** Normalized 0–1 equity points for sparkline */
+  equityHistory: number[]
+  performanceHistory: CopyMasterHistoryRow[]
 }
 
 export type CopyLink = {
@@ -114,14 +142,25 @@ export type CopyLink = {
   openedAt: string
 }
 
+export type AccountPricingTier = "Standard" | "ECN" | "Raw"
+
 export type ForexChargeRow = {
   symbol: string
+  accountType: AccountPricingTier
+  spreadMinPips: string
+  spreadAvgPips: string
+  /** Legacy single spread label (optional) */
   spread: string
   commission: string
   swapLong: string
   swapShort: string
+  contractSize: string
+  leverageMax: string
+  marginRequirementPct: string
   group: "Majors" | "Metals" | "Indices" | "Crypto"
 }
+
+export type IbCommissionBasis = "per_trade" | "per_client" | "per_level"
 
 export type IbNode = {
   id: Id
@@ -133,6 +172,14 @@ export type IbNode = {
   volumeUsd: number
   commissionUsd: number
   status: "Active" | "Suspended"
+  commissionPct: number
+  perLotUsd: number
+  tierRule: string
+  commissionBasis: IbCommissionBasis
+  payoutPendingUsd: number
+  payoutPaidUsd: number
+  walletBalanceUsd: number
+  mappedUserIds: Id[]
 }
 
 export type BankRail = {
@@ -165,14 +212,30 @@ export type Banner = {
   ends: string
 }
 
+export type CompetitionPhase = "Draft" | "Active" | "Completed"
+export type CompetitionLifecycle = "Scheduled" | "Live" | "Ended"
+
 export type CompetitionAdmin = {
   id: string
   name: string
-  phase: "Draft" | "Active" | "Completed"
+  description: string
+  phase: CompetitionPhase
+  lifecycleStatus: CompetitionLifecycle
   prizePool: string
   entrants: number
+  startsAt: string
   endsAt: string
+  entryFeeUsd: number
+  maxParticipants: number | null
+  allowedAccountTypes: ("Standard" | "ECN" | "VIP")[]
+  reEntryAllowed: boolean
+  prizeDistribution: string
+  bannerUrl: string
+  terms: string
+  leaderboardVisible: boolean
 }
+
+export type EmailSegment = "all" | "ibs" | "active_traders"
 
 export type EmailTemplate = {
   id: string
@@ -181,6 +244,10 @@ export type EmailTemplate = {
   channel: "Transactional" | "Marketing"
   lastSent: string
   openRate: string
+  subjectLine: string
+  bodyHtml: string
+  enabled: boolean
+  segment: EmailSegment
 }
 
 export type PropChallenge = {
@@ -231,6 +298,38 @@ export type ActivityItem = {
 
 export type SeriesPoint = { label: string; deposits: number; withdrawals: number; volume: number }
 
+export type LeadSource = "Ads" | "IB" | "Organic"
+export type LeadStatus = "New" | "Contacted" | "Converted" | "Lost"
+
+export type Lead = {
+  id: string
+  name: string
+  phone: string
+  email: string
+  source: LeadSource
+  country: string
+  status: LeadStatus
+  assignedTo: string
+  lastContact: string
+  notes: string
+  /** ISO — used for “New today” and sorting */
+  createdAt: string
+}
+
+export type AbBookTag = "Risk management" | "High profitability" | "Manual decision"
+
+export type AbBookTransfer = {
+  id: string
+  userId: Id
+  userName: string
+  balanceSnapshot: number
+  previousBook: "A" | "B"
+  nextBook: "A" | "B"
+  reason: string
+  tag: AbBookTag
+  createdAt: string
+}
+
 export type AdminState = {
   users: AdminUser[]
   trades: AdminTrade[]
@@ -254,4 +353,7 @@ export type AdminState = {
   oxapay: OxapaySettings
   activity: ActivityItem[]
   series: SeriesPoint[]
+  copySystemPaused: boolean
+  leads: Lead[]
+  abBookTransfers: AbBookTransfer[]
 }
